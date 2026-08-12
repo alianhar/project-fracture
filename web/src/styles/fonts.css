@@ -1,0 +1,15 @@
+/**
+ * Font self-hosted lewat Fontsource — tidak ada request ke Google Fonts saat
+ * runtime, build tidak bergantung jaringan eksternal.
+ *
+ * Montserrat & JetBrains Mono: variable font (satu file, seluruh axis wght).
+ * Poppins: tidak punya rilis variable resmi, jadi pakai weight statis
+ * (400/500/600/700) — cukup untuk body/UI text tanpa membengkakkan bundle.
+ */
+@import '@fontsource-variable/montserrat/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
+
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';

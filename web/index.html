@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0A0E13" />
+    <meta
+      name="description"
+      content="Platform riset klasifikasi patah tulang dari citra X-ray — analisis, perbandingan model, dan benchmark."
+    />
+    <title>Fracture.dx — Fracture Classification Research Platform</title>
+    <!--
+      FOUC-prevention: set data-theme sebelum stylesheet & app di-mount.
+      Dark ("lightbox") adalah mode utama produk ini, jadi jadi fallback akhir.
+      Pola ini identik dengan yang dipakai project-transklin-monitoring-system
+      (localStorage -> prefers-color-scheme -> default), lihat CLAUDE.md.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('fracture-dx-theme');
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

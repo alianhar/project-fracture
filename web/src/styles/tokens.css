@@ -1,0 +1,96 @@
+/**
+ * Token desain — "radiology lightbox / instrument panel".
+ *
+ * Tiga lapis, meniru pola ADR di project-transklin-monitoring-system:
+ *   primitif (warna mentah)
+ *   -> semantik (peran, di :root — dark/"lightbox" adalah mode DEFAULT)
+ *   -> override :root[data-theme="light"] (peran sama, nilai berbeda)
+ *
+ * PENTING: nama semantik di sini (--bg, --text, dst) SENGAJA tidak memakai
+ * prefix "color-"/"font-"/"radius-" yang sama dengan nama utility Tailwind
+ * di src/styles/index.css (--color-bg, --font-display, --radius-sm).
+ * Kalau nama persis sama, `@theme { --color-bg: var(--color-bg); }` jadi
+ * custom property yang mereferensikan dirinya sendiri (circular) dan
+ * resolve ke invalid/kosong. Dua lapis nama ini harus tetap berbeda.
+ *
+ * ATURAN KERAS: komponen TIDAK PERNAH memakai class Tailwind `dark:`.
+ * Ganti tema = ganti atribut data-theme di <html>, custom property yang
+ * mengurus sisanya. Lihat index.html untuk script anti-FOUC.
+ */
+
+:root {
+  /* --- primitif: dark / "lightbox" (default) --- */
+  --primitive-void: #0a0e13;
+  --primitive-film: #131b24;
+  --primitive-film-raised: #1c2731;
+  --primitive-phosphor: #dceef2;
+  --primitive-phosphor-dim: #8fa8ae;
+  --primitive-grease: #ff7a45;
+  --primitive-grease-dim: #7a3d24;
+  --primitive-verdigris: #4fd1c5;
+  --primitive-verdigris-dim: #2a5f58;
+  --primitive-line: #26323d;
+  --primitive-danger: #e5484d;
+  --primitive-warning: #f2b84b;
+
+  /* --- semantik: dark / "lightbox" (default) --- */
+  --bg: var(--primitive-void);
+  --surface: var(--primitive-film);
+  --surface-raised: var(--primitive-film-raised);
+  --text: var(--primitive-phosphor);
+  --text-muted: var(--primitive-phosphor-dim);
+  --border: var(--primitive-line);
+
+  /* positive = "fractured" / area perhatian Grad-CAM — warna pensil-lilin */
+  --positive: var(--primitive-grease);
+  --positive-dim: var(--primitive-grease-dim);
+  /* negative = "not_fractured" / terkalibrasi aman */
+  --negative: var(--primitive-verdigris);
+  --negative-dim: var(--primitive-verdigris-dim);
+
+  --warning: var(--primitive-warning); /* abstain, cold-start */
+  --danger: var(--primitive-danger); /* error API/jaringan */
+  --focus-ring: var(--primitive-phosphor);
+
+  /* vignette monokrom di sekitar viewer lightbox — BUKAN gradient warna */
+  --vignette: rgba(0, 0, 0, 0.55);
+
+  /* radius nyaris nol — disengaja, identitas "instrument panel" */
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 4px;
+
+  /* font */
+  --ff-display: 'Montserrat Variable', sans-serif;
+  --ff-body: 'Poppins', sans-serif;
+  --ff-mono: 'JetBrains Mono Variable', monospace;
+}
+
+:root[data-theme='light'] {
+  /* "printout" — laporan klinis tercetak, BUKAN dark mode dibalik */
+  --primitive-paper: #f7f5f0;
+  --primitive-paper-raised: #ffffff;
+  --primitive-ink: #14181d;
+  --primitive-ink-muted: #5a6470;
+  --primitive-hairline-light: #c9cdd2;
+
+  --bg: var(--primitive-paper);
+  --surface: var(--primitive-paper-raised);
+  --surface-raised: var(--primitive-paper-raised);
+  --text: var(--primitive-ink);
+  --text-muted: var(--primitive-ink-muted);
+  --border: var(--primitive-hairline-light);
+
+  /* grease/verdigris digelapkan untuk kontras AA di atas kertas */
+  --positive: #c4531e;
+  --positive-dim: #e8cbb8;
+  --negative: #21867a;
+  --negative-dim: #cde9e5;
+
+  --warning: #9a6b12;
+  --danger: #b23a3e;
+  --focus-ring: var(--primitive-ink);
+
+  /* vignette nyaris tidak ada di mode cetak */
+  --vignette: rgba(0, 0, 0, 0.08);
+}

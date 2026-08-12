@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './fonts.css';
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+
+  --color-positive: var(--positive);
+  --color-positive-dim: var(--positive-dim);
+  --color-negative: var(--negative);
+  --color-negative-dim: var(--negative-dim);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-focus: var(--focus-ring);
+  --color-vignette: var(--vignette);
+
+  --font-display: var(--ff-display);
+  --font-body: var(--ff-body);
+  --font-mono: var(--ff-mono);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  .font-mono,
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-positive) 35%, transparent);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* scrollbar tipis, senada instrument panel — bukan default browser tebal */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+}
