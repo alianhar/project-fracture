@@ -16,14 +16,29 @@ adalah ringkasan orientasi, bukan pengganti.
 Mengikuti urutan eksekusi di spec §13:
 
 - ✅ **[1] Scaffold frontend** — `web/` sudah jalan penuh di atas data mock
-  (MSW), belum tersambung ke backend asli.
-- ⏳ **[2] Audit dataset** — belum dikerjakan. Ini **gerbang**: menentukan
-  apakah split train/val/test perlu dibuat ulang sebelum training, karena
-  eksperimen lama (`data experiment/`) punya risiko kebocoran antar split
-  yang belum diverifikasi.
+  (MSW), belum tersambung ke backend asli. Sudah di-push ke
+  `github.com/alianhar/project-fracture` (branch `master`).
+- 🔶 **[2] Audit dataset** — notebook `notebooks/01_dataset_audit.ipynb`
+  sudah dibuat, **belum dijalankan**. User yang menjalankan di Colab
+  (butuh akses Google Drive-nya). `DATASET_ROOT` di sel ke-4 sengaja jadi
+  satu-satunya baris yang perlu diganti kalau dataset berubah — semua sel
+  setelahnya generik (split dideteksi otomatis, bukan di-hardcode). Gerbang
+  keputusan: kebocoran antar split >1% → split wajib dibuat ulang sebelum
+  training (lihat spec §5). Hasil disimpan ke `results/audit_report.json`
+  (belum ada di repo — nunggu notebook ini dijalankan).
 - ⏳ **[3]–[9]** — retrain 4 model, evaluasi, ekspor ONNX, ablation CLAHE,
   backend FastAPI, integrasi web ke backend asli, figure publikasi — semua
   belum dikerjakan.
+
+## Catatan status dataset (2026-08-13)
+
+Dataset `Bone_Fracture_Dataset` yang sudah ada di Drive user (dipakai di
+eksperimen lama) dikonfirmasi user sebagai dataset **final** untuk skripsi
+— bukan sementara. User juga menyebut kemungkinan menerima data tambahan
+dari dosen pembimbing (perkiraan waktu: sekitar 2026-08-14), tapi ini
+belum dikonfirmasi akan menggantikan dataset yang ada atau tidak. Notebook
+audit sengaja dirancang dataset-agnostic (satu baris `DATASET_ROOT`) supaya
+tidak ada kerja terbuang di kedua kemungkinan.
 
 `data experiment/` adalah **arsip read-only** (notebook & script eksperimen
 lama) — jangan diedit. Audit terhadapnya ada di spec §2; hasilnya jangan
