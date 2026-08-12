@@ -1,0 +1,31 @@
+# Artefak training (besar, tidak masuk repo)
+runs/
+*.keras
+*.h5
+*.onnx
+*.weights.h5
+
+# Dataset
+data/
+Bone_Fracture_Dataset/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+~$*
+
+# Environment
+.env
+.env.local
