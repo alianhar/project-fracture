@@ -1,0 +1,48 @@
+# Konfigurasi terkunci — identik untuk keempat model (spec §6.1).
+# configs/{tiny,small,base,large}.yaml HANYA meng-override `backbone`.
+# Jangan ubah nilai di sini per-model — itu persis cacat F2 di eksperimen
+# lama (perbandingan arsitektur tidak terkontrol karena LR/epoch/preprocessing
+# berbeda-beda antar model).
+
+seed: 42
+img_size: 224
+batch_size: 16
+
+# ConvNeXt native: input [0,255] mentah, TANPA rescale=1./255 (fix F1).
+# Lihat src/fracture/data.py — satu-satunya tempat preprocessing didefinisikan.
+preprocessing: convnext_native
+
+augment_train:
+  rotation_range: 15
+  zoom_range: 0.15
+  horizontal_flip: true
+# val & test SELALU tanpa augmentasi (fix F5 — val ikut teraugmentasi di
+# eksperimen lama Small).
+
+# Dataset TIDAK lagi dari struktur folder Kaggle asli (terbukti bocor
+# 34.84%, lihat results/audit_report.json) — dari split_manifest.json.
+split_manifest: results/split_manifest.json
+use_class_weight: true  # kelas imbalanced 41.7%/58.3%, lihat audit
+
+phase1:
+  epochs: 30
+  lr: 1.0e-4
+  frozen: true
+
+phase2:
+  epochs: 40
+  lr: 1.0e-5
+  unfreeze_last_stages: 2  # proporsi, bukan angka arbitrer (fix B2)
+
+callbacks:
+  early_stopping:
+    monitor: val_loss
+    patience: 8
+    restore_best_weights: true
+  reduce_lr:
+    monitor: val_loss
+    patience: 4
+    factor: 0.5
+  checkpoint:
+    save_best_only: true
+  # CSVLogger otomatis aktif, ditulis ke runs/<run_id>/history.csv
