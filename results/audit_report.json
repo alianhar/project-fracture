@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-08-14T08:05:12.094520",
+  "dataset_root": "E:\\projects\\project-fracture-classification\\dataset\\Bone_Fracture_Dataset",
+  "source": "kaggle:usman44m/bone-fracture-x-ray-dataset (dikonfirmasi dosen, diberikan 2026-08-14)",
+  "splits_detected": [
+    "test",
+    "train",
+    "val"
+  ],
+  "structure": {
+    "test": {
+      "fractured": 238,
+      "not fractured": 268
+    },
+    "train": {
+      "fractured": 4606,
+      "not fractured": 4640
+    },
+    "val": {
+      "fractured": 337,
+      "not fractured": 492
+    }
+  },
+  "class_distribution": [
+    {
+      "split": "test",
+      "class": "fractured",
+      "count": 238,
+      "pct": 47.04
+    },
+    {
+      "split": "test",
+      "class": "not fractured",
+      "count": 268,
+      "pct": 52.96
+    },
+    {
+      "split": "train",
+      "class": "fractured",
+      "count": 4606,
+      "pct": 49.82
+    },
+    {
+      "split": "train",
+      "class": "not fractured",
+      "count": 4640,
+      "pct": 50.18
+    },
+    {
+      "split": "val",
+      "class": "fractured",
+      "count": 337,
+      "pct": 40.65
+    },
+    {
+      "split": "val",
+      "class": "not fractured",
+      "count": 492,
+      "pct": 59.35
+    }
+  ],
+  "total_images_scanned": 10581,
+  "corrupt_files_count": 18,
+  "has_region_label_hint": false,
+  "region_tokens_found": {},
+  "leakage": {
+    "unique_hashes": 3370,
+    "leaked_groups": 837,
+    "leaked_images": 3680,
+    "leakage_pct": 34.8386,
+    "threshold_pct": 1.0,
+    "gate_passed": false
+  },
+  "intra_split_duplicate_groups": 2220
+}
