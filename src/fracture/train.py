@@ -103,7 +103,7 @@ def run_training(backbone_name: str, train_gen, val_gen, class_weight: dict | No
         model.fit(
             train_gen, validation_data=val_gen,
             initial_epoch=status["completed_epochs"], epochs=p1["epochs"],
-            class_weight=class_weight, callbacks=callbacks, verbose=2,
+            class_weight=class_weight, callbacks=callbacks, verbose=1,
         )
         # EarlyStopping atau selesai natural -- keduanya berarti fase1 tuntas,
         # lanjut ke transisi fase2 di bawah (bukan mengulang fase1).
@@ -128,7 +128,7 @@ def run_training(backbone_name: str, train_gen, val_gen, class_weight: dict | No
         model.fit(
             train_gen, validation_data=val_gen,
             initial_epoch=status["completed_epochs"], epochs=total_epochs,
-            class_weight=class_weight, callbacks=callbacks, verbose=2,
+            class_weight=class_weight, callbacks=callbacks, verbose=1,
         )
         status = _read_status(run_dir)
         status["phase"] = "done"
