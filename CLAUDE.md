@@ -66,11 +66,20 @@ Mengikuti urutan eksekusi di spec §13:
   **Implikasi untuk tahap [3] retrain:** dataset riil jauh lebih kecil dari
   yang diasumsikan skrip lama (2358 vs 9240 train) — ekspektasi akurasi
   perlu diturunkan secara jujur, augmentasi & regularisasi makin penting.
-  `src/fracture/data.py` (belum dibuat) wajib baca `split_manifest.json`,
-  bukan struktur folder Kaggle.
-- ⏳ **[3]–[9]** — retrain 4 model (pipeline/`configs/base.yaml` belum
-  ditulis), evaluasi, ekspor ONNX, ablation CLAHE, backend FastAPI,
-  integrasi web ke backend asli, figure publikasi — semua belum dikerjakan.
+- 🔶 **[3] Pipeline training — kode siap, BELUM DIJALANKAN.**
+  `configs/base.yaml` (+ per-backbone `tiny/small/base_model/large.yaml`),
+  `src/fracture/{data,model,train}.py`, `notebooks/02_train.ipynb`. Satu
+  notebook untuk keempat backbone (ganti `BACKBONE`, bukan 4 file terpisah).
+  Resume asli (status.json ditulis tiap epoch, bukan cuma setelah fit()
+  selesai). Diverifikasi: sintaks, YAML, dan logika manifest-join/
+  class_weight terhadap dataset lokal (3370/3370 file resolve). **Belum
+  diuji dengan TensorFlow sungguhan** (tidak terpasang lokal) — baru
+  tervalidasi nyata saat dijalankan di Colab. User yang menjalankan
+  (akses GPU Colab + Drive-nya).
+- ⏳ **[4]–[9]** — evaluasi (kalibrasi, bootstrap CI, OOD), ekspor ONNX +
+  Grad-CAM analitik, ablation CLAHE, backend FastAPI, integrasi web ke
+  backend asli, figure publikasi — semua belum dikerjakan, nunggu hasil
+  training tahap [3].
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 
