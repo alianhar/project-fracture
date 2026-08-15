@@ -66,20 +66,39 @@ Mengikuti urutan eksekusi di spec §13:
   **Implikasi untuk tahap [3] retrain:** dataset riil jauh lebih kecil dari
   yang diasumsikan skrip lama (2358 vs 9240 train) — ekspektasi akurasi
   perlu diturunkan secara jujur, augmentasi & regularisasi makin penting.
-- 🔶 **[3] Pipeline training — kode siap, BELUM DIJALANKAN.**
+- 🔶 **[3] Pipeline training — 1 dari 4 backbone selesai (Small).**
   `configs/base.yaml` (+ per-backbone `tiny/small/base_model/large.yaml`),
   `src/fracture/{data,model,train}.py`, `notebooks/02_train.ipynb`. Satu
   notebook untuk keempat backbone (ganti `BACKBONE`, bukan 4 file terpisah).
-  Resume asli (status.json ditulis tiap epoch, bukan cuma setelah fit()
-  selesai). Diverifikasi: sintaks, YAML, dan logika manifest-join/
-  class_weight terhadap dataset lokal (3370/3370 file resolve). **Belum
-  diuji dengan TensorFlow sungguhan** (tidak terpasang lokal) — baru
-  tervalidasi nyata saat dijalankan di Colab. User yang menjalankan
-  (akses GPU Colab + Drive-nya).
+  Resume asli (status.json ditulis tiap epoch) — **terbukti jalan di
+  praktik**, dipakai user beberapa kali resume beneran saat troubleshooting.
+
+  **Bug performa besar ditemukan & diperbaiki saat run pertama:** generator
+  baca gambar langsung dari Google Drive tiap step — 40-93 detik/step,
+  epoch pertama >130 menit. Root cause sama dengan R6 di eksperimen lama
+  (sudah diidentifikasi di spec §6.3, tapi lupa diimplementasikan di kode
+  nyata — kelalaian). Fix: cell salin dataset (3.370 gambar kanonik) ke
+  disk lokal Colab sekali per sesi + `verbose=1`. Terpisah, juga ditemukan
+  sesi awal user ternyata jalan di **CPU, bukan GPU** (kuota GPU gratis
+  Colab habis akibat banyak restart selama debug) — bukan bug kode.
+  Setelah GPU aktif + disk lokal: **361ms/step, turun ~47x** dari sebelumnya.
+
+  **Hasil Small:** 58 epoch (EarlyStopping tepat waktu, val_loss terbaik
+  epoch 49). Test set (508 gambar, held-out zero-leakage): **98.62%
+  akurasi**, precision/recall seimbang kedua kelas. Ini sanity-check saja
+  (threshold 0.5 mentah, belum kalibrasi/bootstrap CI — itu tahap [4]).
+  **Catatan penting:** angka ini kebetulan mirip 98.6% palsu di eksperimen
+  lama — HARUS dijelaskan eksplisit di skripsi bahwa ini kali ini valid
+  (nol duplikat by construction), bukan kebetulan mencurigakan.
+  File `.keras` tidak di-commit (gitignored) — cuma history/status/plot
+  di `fracture-runs/small_4fdac66d/` sebagai bukti.
+
+  **Selanjutnya:** Tiny, lalu Base, lalu Large — notebook sama, ganti
+  `BACKBONE` saja. Config sudah terkunci sama untuk keempatnya.
 - ⏳ **[4]–[9]** — evaluasi (kalibrasi, bootstrap CI, OOD), ekspor ONNX +
   Grad-CAM analitik, ablation CLAHE, backend FastAPI, integrasi web ke
-  backend asli, figure publikasi — semua belum dikerjakan, nunggu hasil
-  training tahap [3].
+  backend asli, figure publikasi — semua belum dikerjakan, nunggu 4
+  backbone selesai training.
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 
