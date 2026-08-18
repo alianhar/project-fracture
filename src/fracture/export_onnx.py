@@ -40,55 +40,58 @@ def extract_head_weights(model: tf.keras.Model) -> dict:
 def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224, opset: int = 13):
     """Butuh `tf2onnx` terpasang (bukan default Colab -- `!pip install tf2onnx`).
 
-    Konversi lewat SavedModel round-trip (export ke disk, baru tf2onnx baca
-    dari situ) -- BUKAN `tf2onnx.convert.from_keras()` langsung ke objek
-    model in-memory. ConvNeXt punya custom depthwise-conv layer yang
-    ke-wrap jadi subgraph `tf.function` (StatefulPartitionedCall) saat
-    dikonversi langsung dari objek Keras; tf2onnx tidak bisa "lihat ke
-    dalam" wrapper itu. Export+reload SavedModel memaksa TF meratakan
-    graph sepenuhnya sebelum tf2onnx membacanya.
+    RIWAYAT (kenapa bukan from_keras()/SavedModel langsung): baik
+    `tf2onnx.convert.from_keras()` langsung ke objek model in-memory MAUPUN
+    round-trip lewat SavedModel (`export_model.export()` + CLI) sama-sama
+    gagal dengan error identik -- StatefulPartitionedCall (di tiap
+    depthwise-conv ConvNeXt) tidak bisa dibongkar tf2onnx. Ini membuktikan
+    masalahnya BUKAN soal jalur masuknya, tapi proses freeze/inline
+    bawaan tf2onnx tidak cukup agresif untuk subgraph tf.function yang
+    dipakai ConvNeXt.
 
-    Konversi dari SavedModel dijalankan lewat CLI tf2onnx (`python -m
-    tf2onnx.convert --saved-model ...`), BUKAN fungsi Python internal --
-    nama fungsi programatik (`tf2onnx.convert.from_saved_model` dsb.)
-    ternyata tidak stabil lintas versi tf2onnx, sedangkan CLI-nya
-    terdokumentasi resmi dan konsisten. Shape input dibaca otomatis dari
-    signature SavedModel (sudah tertanam dari `export_model.export()`),
-    tidak perlu di-pass ulang manual.
+    Fix: freeze graph MANUAL pakai `convert_variables_to_constants_v2(...,
+    aggressive_inlining=True)` -- API TF resmi yang secara eksplisit
+    meng-inline nested tf.function call (bukan cuma ganti Variable jadi
+    Constant seperti freeze biasa) -- baru serahkan GraphDef yang sudah
+    beku itu ke `tf2onnx.convert.from_graph_def()` (bukan from_keras()).
 
-    PENTING: tf2onnx CLI bisa exit code 0 walau ada op yang GAGAL
-    dikonversi (StatefulPartitionedCall/Erfc dsb. dilaporkan sbg ERROR log
-    tapi tidak menghentikan proses) -- file .onnx yang dihasilkan tetap
-    "sukses tersimpan" tapi rusak (baru ketahuan saat onnxruntime coba
-    load). Makanya stdout/stderr SELALU di-print, bukan cuma saat gagal --
-    supaya peringatan itu tidak ketelan diam-diam.
+    CATATAN: ini HANYA menangani StatefulPartitionedCall. Erfc (GELU
+    eksak ConvNeXt, ONNX tidak punya op itu) adalah masalah TERPISAH yang
+    kemungkinan besar masih akan muncul setelah fix ini -- assert di
+    bawah akan bunyi eksplisit kalau itu terjadi, jangan diabaikan.
     """
-    import subprocess
-    import sys
-    import tempfile
+    import tf2onnx
+    from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 
     export_model = build_export_model(model)
+    input_spec = tf.TensorSpec((None, img_size, img_size, 3), tf.float32, name="input")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        export_model.export(tmp_dir)  # SavedModel format (Keras 3)
-        result = subprocess.run(
-            [
-                sys.executable, "-m", "tf2onnx.convert",
-                "--saved-model", tmp_dir,
-                "--output", output_path,
-                "--opset", str(opset),
-            ],
-            capture_output=True, text=True,
-        )
-        print(result.stdout)
-        print(result.stderr)
-        if result.returncode != 0:
-            raise RuntimeError(f"tf2onnx CLI gagal (exit code {result.returncode}) -- lihat output di atas.")
-        if "Unsupported ops" in result.stderr or "not supported" in result.stderr:
-            raise RuntimeError(
-                "tf2onnx CLI exit code 0 tapi ada op tidak didukung (lihat log ERROR di atas) -- "
-                "graph .onnx yang dihasilkan RUSAK meski file tersimpan. Jangan lanjut."
-            )
+    @tf.function(input_signature=[input_spec])
+    def _serving_fn(x):
+        return export_model(x)
+
+    concrete_func = _serving_fn.get_concrete_function()
+    frozen_func = convert_variables_to_constants_v2(concrete_func, aggressive_inlining=True)
+    graph_def = frozen_func.graph.as_graph_def()
+
+    input_names = [t.name for t in frozen_func.inputs]
+    output_names = [t.name for t in frozen_func.outputs]
+
+    tf2onnx.convert.from_graph_def(
+        graph_def,
+        input_names=input_names,
+        output_names=output_names,
+        opset=opset,
+        output_path=output_path,
+    )
+
+    # Verifikasi LANGSUNG di sini, bukan cuma nunggu verify_prob_parity nanti --
+    # tf2onnx bisa "berhasil" tanpa exception (op tidak didukung dilaporkan
+    # lewat logging ERROR, bukan exception) sementara graph tetap tidak
+    # bisa di-load onnxruntime. Gagal cepat & jelas di titik ini.
+    import onnxruntime as ort
+
+    ort.InferenceSession(output_path)
     return export_model
 
 
