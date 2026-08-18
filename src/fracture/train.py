@@ -115,11 +115,28 @@ def run_training(backbone_name: str, train_gen, val_gen, class_weight: dict | No
     if status["phase"] in ("phase1_done",):
         unfreeze_from = unfreeze_last_stages(model, n_stages=p2["unfreeze_last_stages"])
         print(f"[{backbone_name}] Unfreeze dari layer backbone index {unfreeze_from}")
-        status = {"phase": "phase2", "completed_epochs": p1["epochs"]}
+        # PENTING: pakai completed_epochs ASLI dari fase1 (bisa < p1["epochs"]
+        # kalau EarlyStopping berhenti sebelum budget penuh), BUKAN p1["epochs"]
+        # begitu saja -- itu bug yang sempat ada (lihat CLAUDE.md): kalau fase1
+        # berhenti lebih awal, nomor epoch fase2 "meloncat" (mis. dari 22
+        # langsung ditandai 30). completed_epochs tetap dicatat, plus
+        # phase1_actual_epochs disimpan terpisah supaya budget fase2
+        # (p2["epochs"]) tetap independen dari kapan fase1 sungguhan berhenti.
+        phase1_actual_epochs = status["completed_epochs"]
+        status = {
+            "phase": "phase2",
+            "completed_epochs": phase1_actual_epochs,
+            "phase1_actual_epochs": phase1_actual_epochs,
+        }
         _write_status(run_dir, status)
 
     # ===== Fase 2: fine-tune =====
-    total_epochs = p1["epochs"] + p2["epochs"]
+    # total_epochs dihitung dari phase1_actual_epochs (fallback ke p1["epochs"]
+    # untuk status.json lama yang ditulis sebelum fix ini) -- BUKAN p1["epochs"]
+    # statis -- supaya budget fase2 tetap p2["epochs"] penuh, independen dari
+    # kapan fase1 sungguhan berhenti.
+    phase1_actual_epochs = status.get("phase1_actual_epochs", p1["epochs"])
+    total_epochs = phase1_actual_epochs + p2["epochs"]
     if status["phase"] == "phase2" and status["completed_epochs"] < total_epochs:
         # Recompile wajib setiap resume di fase2 (trainable flags perlu
         # ter-apply ulang ke optimizer state setelah load_model).
