@@ -184,8 +184,11 @@ def verify_prob_parity(keras_model: tf.keras.Model, onnx_path: str, sample_batch
     session = ort.InferenceSession(onnx_path)
     input_name = session.get_inputs()[0].name
     onnx_outputs = session.run(None, {input_name: sample_batch.astype(np.float32)})
-    # Urutan output mengikuti urutan `outputs=[prob, featmap]` di build_export_model
-    onnx_prob = onnx_outputs[0].squeeze(axis=-1)
+    # Urutan output ONNX TERNYATA tidak mengikuti urutan outputs=[prob, featmap]
+    # di build_export_model -- berubah lewat pipeline TFLite->tf2onnx. Identifikasi
+    # prob lewat bentuknya (N,1), bukan asumsi index tetap.
+    prob_idx = next(i for i, out in enumerate(onnx_outputs) if out.ndim == 2 and out.shape[-1] == 1)
+    onnx_prob = onnx_outputs[prob_idx].squeeze(axis=-1)
 
     max_diff = float(np.max(np.abs(keras_prob - onnx_prob)))
     assert max_diff < atol, f"Parity ONNX vs Keras gagal: selisih maksimum {max_diff} >= {atol}"
