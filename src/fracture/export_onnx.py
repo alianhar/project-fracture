@@ -21,6 +21,62 @@ from pathlib import Path
 import numpy as np
 import tensorflow as tf
 
+_TFL_GELU_REGISTERED = False
+
+
+def _register_tfl_gelu_handler() -> None:
+    """Registrasi custom op handler tf2onnx untuk `TFL_GELU`.
+
+    TFLite men-fuse GELU eksak ConvNeXt jadi builtin op `TFL_GELU` yang
+    tf2onnx tidak kenal -- akar masalah yang sama sejak awal (`Erfc`, ONNX
+    tidak punya op itu), cuma sekarang namanya beda karena sudah lewat
+    fusion pass TFLite. Diganti jadi dekomposisi `Erf` standar
+    (`0.5*x*(1+erf(x/sqrt(2)))`) -- SAMA PERSIS secara matematis (bukan
+    aproksimasi tanh), karena `Erf` DIDUKUNG ONNX sejak opset 9 (beda dari
+    `Erfc` yang tidak pernah ada di spesifikasi ONNX).
+
+    CATATAN JUJUR: pola registrasi decorator `@tf_op(...)` + `ctx.make_node`/
+    `ctx.make_const`/`ctx.remove_node` ini konsisten dengan cara tf2onnx
+    mendaftarkan konverter bawaannya sendiri (dipakai di seluruh
+    tf2onnx/onnx_opset/*.py) -- tapi BELUM PERNAH diverifikasi jalan
+    terhadap versi tf2onnx yang ke-install (1.17.0). Kalau signature/nama
+    method salah, error yang muncul akan jelas (TypeError/AttributeError
+    saat konversi) -- paste traceback-nya, jangan asumsikan ini pasti benar.
+
+    Idempotent: registrasi cuma sekali per proses (flag modul-level) --
+    aman dipanggil ulang tiap iterasi loop 4 backbone di notebook.
+    """
+    global _TFL_GELU_REGISTERED
+    if _TFL_GELU_REGISTERED:
+        return
+
+    from tf2onnx import utils
+    from tf2onnx.handler import tf_op
+
+    @tf_op("TFL_GELU")
+    class TflGelu:
+        @classmethod
+        def version_9(cls, ctx, node, **kwargs):  # opset minimum utk op Erf
+            x = node.input[0]
+            dtype = ctx.get_dtype(node.output[0])
+            shape = ctx.get_shape(node.output[0])
+
+            sqrt2 = ctx.make_const(utils.make_name("gelu_sqrt2"), np.array(1.4142135, dtype=np.float32))
+            div_node = ctx.make_node("Div", [x, sqrt2.output[0]])
+            erf_node = ctx.make_node("Erf", [div_node.output[0]])
+            one_const = ctx.make_const(utils.make_name("gelu_one"), np.array(1.0, dtype=np.float32))
+            add_node = ctx.make_node("Add", [erf_node.output[0], one_const.output[0]])
+            half_const = ctx.make_const(utils.make_name("gelu_half"), np.array(0.5, dtype=np.float32))
+            mul_half_node = ctx.make_node("Mul", [add_node.output[0], half_const.output[0]])
+
+            ctx.remove_node(node.name)
+            ctx.make_node(
+                "Mul", [x, mul_half_node.output[0]],
+                name=node.name, outputs=node.output, shapes=[shape], dtypes=[dtype],
+            )
+
+    _TFL_GELU_REGISTERED = True
+
 
 def build_export_model(model: tf.keras.Model) -> tf.keras.Model:
     """Model 2-output: [prob, featmap]."""
@@ -57,14 +113,13 @@ def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224,
     dibanding graph walker tf2onnx sendiri -- ini pipeline konversi yang
     BENAR-BENAR BEDA, bukan variasi dari 3 percobaan sebelumnya.
 
-    Efek samping yang mungkin menguntungkan untuk Erfc: TFLite punya
-    builtin op GELU native (bukan didekomposisi jadi erf/erfc mentah),
-    dan tf2onnx kemungkinan punya converter khusus builtin GELU -> ONNX
-    yang lebih matang daripada menangani Erfc mentah yang muncul acak di
-    posisi graph TF biasa. opset dinaikkan ke 18 (dari 13) karena ONNX
-    versi lebih baru mendukung op Gelu native -- BELUM DIVERIFIKASI
-    seratus persen berhasil, tapi ini upaya paling masuk akal berikutnya
-    tanpa menulis custom op handler yang API-nya belum saya konfirmasi.
+    Efek samping dari fusion TFLite: GELU eksak jadi builtin `TFL_GELU`
+    (bukan `Erfc` mentah tersebar di banyak posisi graph) -- tf2onnx TETAP
+    tidak kenal op itu, tapi karena sekarang jadi SATU op atomik yang
+    well-defined, ditangani lewat custom op handler
+    (`_register_tfl_gelu_handler()`) yang mengganti `TFL_GELU` jadi
+    dekomposisi `Erf` standar -- SAMA PERSIS secara matematis, bukan
+    aproksimasi, karena `Erf` didukung ONNX (beda dari `Erfc`).
 
     TFLiteConverter default TIDAK melakukan kuantisasi (float32 murni) --
     `converter.optimizations` sengaja TIDAK di-set, supaya presisi untuk
@@ -73,6 +128,8 @@ def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224,
     import tempfile
 
     import tf2onnx
+
+    _register_tfl_gelu_handler()
 
     export_model = build_export_model(model)
 
