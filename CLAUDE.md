@@ -66,39 +66,60 @@ Mengikuti urutan eksekusi di spec §13:
   **Implikasi untuk tahap [3] retrain:** dataset riil jauh lebih kecil dari
   yang diasumsikan skrip lama (2358 vs 9240 train) — ekspektasi akurasi
   perlu diturunkan secara jujur, augmentasi & regularisasi makin penting.
-- 🔶 **[3] Pipeline training — 1 dari 4 backbone selesai (Small).**
+- ✅ **[3] Pipeline training — SEMUA 4 backbone selesai.**
   `configs/base.yaml` (+ per-backbone `tiny/small/base_model/large.yaml`),
-  `src/fracture/{data,model,train}.py`, `notebooks/02_train.ipynb`. Satu
-  notebook untuk keempat backbone (ganti `BACKBONE`, bukan 4 file terpisah).
-  Resume asli (status.json ditulis tiap epoch) — **terbukti jalan di
-  praktik**, dipakai user beberapa kali resume beneran saat troubleshooting.
+  `src/fracture/{data,model,train}.py`, `notebooks/02_train.ipynb` (satu
+  notebook, section "Lanjut ke backbone berikutnya" di akhir untuk ganti
+  model tanpa scroll ke atas). Resume asli (status.json tiap epoch) —
+  terbukti jalan di praktik, dipakai berkali-kali saat troubleshooting.
 
-  **Bug performa besar ditemukan & diperbaiki saat run pertama:** generator
-  baca gambar langsung dari Google Drive tiap step — 40-93 detik/step,
-  epoch pertama >130 menit. Root cause sama dengan R6 di eksperimen lama
-  (sudah diidentifikasi di spec §6.3, tapi lupa diimplementasikan di kode
-  nyata — kelalaian). Fix: cell salin dataset (3.370 gambar kanonik) ke
-  disk lokal Colab sekali per sesi + `verbose=1`. Terpisah, juga ditemukan
-  sesi awal user ternyata jalan di **CPU, bukan GPU** (kuota GPU gratis
-  Colab habis akibat banyak restart selama debug) — bukan bug kode.
-  Setelah GPU aktif + disk lokal: **361ms/step, turun ~47x** dari sebelumnya.
+  **Dua bug besar ditemukan & diperbaiki selama proses:**
+  1. Generator baca gambar langsung dari Drive tiap step (40-93 detik/step)
+     + sesi awal ternyata jalan di **CPU bukan GPU** (kuota GPU gratis
+     Colab habis akibat banyak restart). Fix: salin dataset ke disk lokal
+     Colab + pastikan GPU aktif → **361ms/step, turun ~47x**.
+  2. **Bug pencatatan epoch** (`src/fracture/train.py`, fix commit
+     `f3b4f96`): transisi fase1→fase2 selalu menulis `completed_epochs=30`
+     dari config, TIDAK PEDULI fase1 sungguhan berhenti lebih awal via
+     EarlyStopping. Berdampak nyata ke **Base** (fase1 EarlyStop di epoch
+     22 → status.json salah catat completed_epochs=48, padahal asli
+     23+18=41). **Cuma bug label, BUKAN bug yang merusak model** — jumlah
+     epoch fase2 yang sungguhan jalan tidak berubah (Keras `initial_epoch`
+     cuma memengaruhi penomoran). Tiny & Small kebetulan tidak kena
+     (fase1 mereka memang penuh 30 epoch). Model `best.keras` Base tetap
+     valid, tidak perlu dilatih ulang.
 
-  **Hasil Small:** 58 epoch (EarlyStopping tepat waktu, val_loss terbaik
-  epoch 49). Test set (508 gambar, held-out zero-leakage): **98.62%
-  akurasi**, precision/recall seimbang kedua kelas. Ini sanity-check saja
-  (threshold 0.5 mentah, belum kalibrasi/bootstrap CI — itu tahap [4]).
-  **Catatan penting:** angka ini kebetulan mirip 98.6% palsu di eksperimen
-  lama — HARUS dijelaskan eksplisit di skripsi bahwa ini kali ini valid
-  (nol duplikat by construction), bukan kebetulan mencurigakan.
-  File `.keras` tidak di-commit (gitignored) — cuma history/status/plot
-  di `fracture-runs/small_4fdac66d/` sebagai bukti.
+  **Hasil akhir (total epoch ASLI, val terbaik):**
 
-  **Selanjutnya:** Tiny, lalu Base, lalu Large — notebook sama, ganti
-  `BACKBONE` saja. Config sudah terkunci sama untuk keempatnya.
-- ⏳ **[4]–[9]** — evaluasi (kalibrasi, bootstrap CI, OOD), ekspor ONNX +
-  Grad-CAM analitik, ablation CLAHE, backend FastAPI, integrasi web ke
-  backend asli, figure publikasi — semua belum dikerjakan, nunggu 4
-  backbone selesai training.
+  | Model | Fase1 | Fase2 | Total | val_acc | val_loss |
+  |---|---|---|---|---|---|
+  | Tiny  | 30 | 21 | 51 | 98.61% | 0.0606 |
+  | Small | 30 | 28 | 58 | 98.61% | 0.0391 |
+  | Base  | 23 | 18 | 41 | 99.21% | 0.0476 |
+  | Large | 30 | 10 | 40 | 98.81% | 0.0408 |
+
+  Test set (sanity check, threshold 0.5 mentah — cuma Small & Large yang
+  sempat tersimpan sebelum ke-overwrite run berikutnya): Small 98.62–99.02%
+  (variasi run-to-run kecil, noise numerik GPU normal), Large 99.41%.
+
+  **Verdict jujur:** keempat model SANGAT MIRIP (98.6–99.4%). **Belum bisa
+  klaim model mana "terbaik"** — itu cuma sah kalau 95% CI tidak overlap
+  (spec §7/§14), dan CI belum dihitung untuk satu pun. Catatan penting
+  untuk skripsi: 98,6% test Small kebetulan mirip 98,6% palsu di
+  eksperimen lama — HARUS dijelaskan eksplisit kenapa kali ini valid (nol
+  duplikat by construction, bukan kebetulan mencurigakan).
+
+  File `.keras` (300MB–1,9GB per model) TIDAK di-commit (gitignored) —
+  cuma history CSV/status/plot di `fracture-runs/<backbone>_<hash>/`
+  sebagai bukti. Model asli ada di Drive user.
+- ⏳ **[4] Evaluasi formal — BELUM DIMULAI, langkah berikutnya.**
+  `notebooks/03_evaluate_export.ipynb` per spec §7: bootstrap 95% CI
+  (baru bisa klaim model terbaik setelah ini), kalibrasi (temperature
+  scaling + ECE + reliability diagram), threshold dari validation (bukan
+  test), selective prediction (risk-coverage), gerbang OOD (Mahalanobis).
+- ⏳ **[5]–[9]** — ekspor ONNX + Grad-CAM analitik, ablation CLAHE
+  (di model terbaik saja, setelah [4] tahu mana yang terbaik), backend
+  FastAPI, integrasi web ke backend asli, figure publikasi.
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 
