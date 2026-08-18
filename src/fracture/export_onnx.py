@@ -37,53 +37,55 @@ def extract_head_weights(model: tf.keras.Model) -> dict:
     return {"w1": w1, "b1": b1, "w2": w2.squeeze(axis=-1), "b2": float(b2[0])}
 
 
-def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224, opset: int = 13):
+def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224, opset: int = 18):
     """Butuh `tf2onnx` terpasang (bukan default Colab -- `!pip install tf2onnx`).
 
-    RIWAYAT (kenapa bukan from_keras()/SavedModel langsung): baik
-    `tf2onnx.convert.from_keras()` langsung ke objek model in-memory MAUPUN
-    round-trip lewat SavedModel (`export_model.export()` + CLI) sama-sama
-    gagal dengan error identik -- StatefulPartitionedCall (di tiap
-    depthwise-conv ConvNeXt) tidak bisa dibongkar tf2onnx. Ini membuktikan
-    masalahnya BUKAN soal jalur masuknya, tapi proses freeze/inline
-    bawaan tf2onnx tidak cukup agresif untuk subgraph tf.function yang
-    dipakai ConvNeXt.
+    RIWAYAT (3 pendekatan GAGAL sebelum ini, semua lewat jalur TF-graph
+    langsung ke tf2onnx -- `from_keras()`, SavedModel+CLI, freeze manual
+    `convert_variables_to_constants_v2(aggressive_inlining=True)`): semua
+    mentok identik di StatefulPartitionedCall untuk tiap depthwise-conv
+    ConvNeXt. Ini bukti kuat depthwise-conv ConvNeXt dibungkus fungsi yang
+    SECARA STRUKTURAL tidak bisa di-inline oleh optimizer graph TF apa
+    pun (kemungkinan `@tf.custom_gradient`) -- freeze lebih agresif tidak
+    akan pernah menembus ini, tf2onnx.tfonnx (graph walker TF native) itu
+    sendiri yang tidak sanggup.
 
-    Fix: freeze graph MANUAL pakai `convert_variables_to_constants_v2(...,
-    aggressive_inlining=True)` -- API TF resmi yang secara eksplisit
-    meng-inline nested tf.function call (bukan cuma ganti Variable jadi
-    Constant seperti freeze biasa) -- baru serahkan GraphDef yang sudah
-    beku itu ke `tf2onnx.convert.from_graph_def()` (bukan from_keras()).
+    Fix (pendekatan ke-4, pivot arsitektur bukan sekadar freeze lagi):
+    konversi lewat PERANTARA TFLite (`TF -> TFLite -> ONNX`), BUKAN
+    langsung TF graph -> ONNX. Konverter TFLite (berbasis MLIR) jauh
+    lebih matang dalam meng-inline fungsi custom-gradient/StatefulPartitionedCall
+    dibanding graph walker tf2onnx sendiri -- ini pipeline konversi yang
+    BENAR-BENAR BEDA, bukan variasi dari 3 percobaan sebelumnya.
 
-    CATATAN: ini HANYA menangani StatefulPartitionedCall. Erfc (GELU
-    eksak ConvNeXt, ONNX tidak punya op itu) adalah masalah TERPISAH yang
-    kemungkinan besar masih akan muncul setelah fix ini -- assert di
-    bawah akan bunyi eksplisit kalau itu terjadi, jangan diabaikan.
+    Efek samping yang mungkin menguntungkan untuk Erfc: TFLite punya
+    builtin op GELU native (bukan didekomposisi jadi erf/erfc mentah),
+    dan tf2onnx kemungkinan punya converter khusus builtin GELU -> ONNX
+    yang lebih matang daripada menangani Erfc mentah yang muncul acak di
+    posisi graph TF biasa. opset dinaikkan ke 18 (dari 13) karena ONNX
+    versi lebih baru mendukung op Gelu native -- BELUM DIVERIFIKASI
+    seratus persen berhasil, tapi ini upaya paling masuk akal berikutnya
+    tanpa menulis custom op handler yang API-nya belum saya konfirmasi.
+
+    TFLiteConverter default TIDAK melakukan kuantisasi (float32 murni) --
+    `converter.optimizations` sengaja TIDAK di-set, supaya presisi untuk
+    verifikasi parity (<1e-4) tidak rusak oleh kuantisasi.
     """
+    import tempfile
+
     import tf2onnx
-    from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 
     export_model = build_export_model(model)
-    input_spec = tf.TensorSpec((None, img_size, img_size, 3), tf.float32, name="input")
 
-    @tf.function(input_signature=[input_spec])
-    def _serving_fn(x):
-        return export_model(x)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tflite_path = f"{tmp_dir}/model.tflite"
 
-    concrete_func = _serving_fn.get_concrete_function()
-    frozen_func = convert_variables_to_constants_v2(concrete_func, aggressive_inlining=True)
-    graph_def = frozen_func.graph.as_graph_def()
+        converter = tf.lite.TFLiteConverter.from_keras_model(export_model)
+        # TIDAK set converter.optimizations -- default = float32 murni, tanpa kuantisasi.
+        tflite_model = converter.convert()
+        with open(tflite_path, "wb") as f:
+            f.write(tflite_model)
 
-    input_names = [t.name for t in frozen_func.inputs]
-    output_names = [t.name for t in frozen_func.outputs]
-
-    tf2onnx.convert.from_graph_def(
-        graph_def,
-        input_names=input_names,
-        output_names=output_names,
-        opset=opset,
-        output_path=output_path,
-    )
+        tf2onnx.convert.from_tflite(tflite_path, output_path=output_path, opset=opset)
 
     # Verifikasi LANGSUNG di sini, bukan cuma nunggu verify_prob_parity nanti --
     # tf2onnx bisa "berhasil" tanpa exception (op tidak didukung dilaporkan
