@@ -55,6 +55,13 @@ def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224,
     terdokumentasi resmi dan konsisten. Shape input dibaca otomatis dari
     signature SavedModel (sudah tertanam dari `export_model.export()`),
     tidak perlu di-pass ulang manual.
+
+    PENTING: tf2onnx CLI bisa exit code 0 walau ada op yang GAGAL
+    dikonversi (StatefulPartitionedCall/Erfc dsb. dilaporkan sbg ERROR log
+    tapi tidak menghentikan proses) -- file .onnx yang dihasilkan tetap
+    "sukses tersimpan" tapi rusak (baru ketahuan saat onnxruntime coba
+    load). Makanya stdout/stderr SELALU di-print, bukan cuma saat gagal --
+    supaya peringatan itu tidak ketelan diam-diam.
     """
     import subprocess
     import sys
@@ -63,7 +70,7 @@ def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224,
     export_model = build_export_model(model)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        export_model.export(tmp_dir)  # SavedModel format (Keras 3) -- meratakan graph
+        export_model.export(tmp_dir)  # SavedModel format (Keras 3)
         result = subprocess.run(
             [
                 sys.executable, "-m", "tf2onnx.convert",
@@ -73,10 +80,15 @@ def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224,
             ],
             capture_output=True, text=True,
         )
+        print(result.stdout)
+        print(result.stderr)
         if result.returncode != 0:
-            print(result.stdout)
-            print(result.stderr)
             raise RuntimeError(f"tf2onnx CLI gagal (exit code {result.returncode}) -- lihat output di atas.")
+        if "Unsupported ops" in result.stderr or "not supported" in result.stderr:
+            raise RuntimeError(
+                "tf2onnx CLI exit code 0 tapi ada op tidak didukung (lihat log ERROR di atas) -- "
+                "graph .onnx yang dihasilkan RUSAK meski file tersimpan. Jangan lanjut."
+            )
     return export_model
 
 
