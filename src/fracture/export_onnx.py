@@ -47,17 +47,36 @@ def export_to_onnx(model: tf.keras.Model, output_path: str, img_size: int = 224,
     dikonversi langsung dari objek Keras; tf2onnx tidak bisa "lihat ke
     dalam" wrapper itu. Export+reload SavedModel memaksa TF meratakan
     graph sepenuhnya sebelum tf2onnx membacanya.
+
+    Konversi dari SavedModel dijalankan lewat CLI tf2onnx (`python -m
+    tf2onnx.convert --saved-model ...`), BUKAN fungsi Python internal --
+    nama fungsi programatik (`tf2onnx.convert.from_saved_model` dsb.)
+    ternyata tidak stabil lintas versi tf2onnx, sedangkan CLI-nya
+    terdokumentasi resmi dan konsisten. Shape input dibaca otomatis dari
+    signature SavedModel (sudah tertanam dari `export_model.export()`),
+    tidak perlu di-pass ulang manual.
     """
+    import subprocess
+    import sys
     import tempfile
 
-    import tf2onnx
-
     export_model = build_export_model(model)
-    spec = (tf.TensorSpec((None, img_size, img_size, 3), tf.float32, name="input"),)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         export_model.export(tmp_dir)  # SavedModel format (Keras 3) -- meratakan graph
-        tf2onnx.convert.from_saved_model(tmp_dir, input_signature=spec, opset=opset, output_path=output_path)
+        result = subprocess.run(
+            [
+                sys.executable, "-m", "tf2onnx.convert",
+                "--saved-model", tmp_dir,
+                "--output", output_path,
+                "--opset", str(opset),
+            ],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            print(result.stdout)
+            print(result.stderr)
+            raise RuntimeError(f"tf2onnx CLI gagal (exit code {result.returncode}) -- lihat output di atas.")
     return export_model
 
 
