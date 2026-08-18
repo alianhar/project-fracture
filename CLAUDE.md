@@ -17,7 +17,7 @@ diambil; jangan asumsikan salah satu tanpa tanya user.
 konflik antara dokumen ini dan spec, **spec yang menang** — dokumen ini
 adalah ringkasan orientasi, bukan pengganti.
 
-## Status saat ini (2026-08-14)
+## Status saat ini (2026-08-18)
 
 Mengikuti urutan eksekusi di spec §13:
 
@@ -112,14 +112,42 @@ Mengikuti urutan eksekusi di spec §13:
   File `.keras` (300MB–1,9GB per model) TIDAK di-commit (gitignored) —
   cuma history CSV/status/plot di `fracture-runs/<backbone>_<hash>/`
   sebagai bukti. Model asli ada di Drive user.
-- ⏳ **[4] Evaluasi formal — BELUM DIMULAI, langkah berikutnya.**
-  `notebooks/03_evaluate_export.ipynb` per spec §7: bootstrap 95% CI
-  (baru bisa klaim model terbaik setelah ini), kalibrasi (temperature
-  scaling + ECE + reliability diagram), threshold dari validation (bukan
-  test), selective prediction (risk-coverage), gerbang OOD (Mahalanobis).
-- ⏳ **[5]–[9]** — ekspor ONNX + Grad-CAM analitik, ablation CLAHE
-  (di model terbaik saja, setelah [4] tahu mana yang terbaik), backend
-  FastAPI, integrasi web ke backend asli, figure publikasi.
+- ✅ **Keempat backbone selesai training.** `fracture-runs/{tiny_a817fd5a,
+  small_4fdac66d,base_cf7600d6,large_789f2c2e}/` berisi `best.keras` +
+  `latest.keras` (belum di-commit ke git — gitignored — evidence CSV/plot
+  saja yang masuk repo, sama seperti Small sebelumnya).
+- 🔶 **[4]+[5] Evaluasi formal + ekspor ONNX — notebook ditulis & divalidasi
+  secara statis, BELUM dijalankan di Colab.** `notebooks/03_evaluate_export.ipynb`
+  (23 sel) mengimplementasikan spec §7+§8 untuk keempat model sekaligus:
+  bootstrap 95% CI (2000 resample), threshold Youden dari VALIDATION
+  (bukan test — fix F4), kalibrasi (temperature scaling + ECE +
+  reliability diagram), risk-coverage curve, gerbang OOD (Mahalanobis di
+  fitur GAP, referensi OOD = CIFAR-10 publik, bukan `/dataset/` lokal —
+  keduanya kelasnya tetap X-ray in-distribution), Grad-CAM analitik
+  (`src/fracture/gradcam.py`, turunan closed-form untuk head
+  GAP→Dense(gelu)→Dense(sigmoid), diverifikasi < 1e-4 vs GradientTape
+  ground-truth di KEDUA arah kelas — fix B3), ekspor ONNX 2-output
+  `[prob, featmap]` + bobot head terpisah sebagai `.npz` (supaya server
+  bisa hitung Grad-CAM/OOD NumPy murni tanpa TensorFlow), verifikasi
+  parity probabilitas ONNX vs Keras (< 1e-4).
+
+  Modul pendukung (`src/fracture/{evaluate,calibration,gradcam,ood,
+  export_onnx}.py`) sudah divalidasi lokal lewat smoke test numpy/sklearn/
+  scipy murni (finite-difference check turunan Grad-CAM analitik cocok
+  dengan gradien numerik sampai ~5e-7) — TAPI belum pernah dijalankan
+  end-to-end dengan model ConvNeXt sungguhan (butuh Colab, tidak ada
+  TensorFlow lokal). **`clahe_ablation` sengaja TIDAK diisi** di
+  `results/metrics.json` yang dihasilkan — itu spec §11, dikerjakan
+  terpisah setelah model terbaik diketahui dari CI di sini.
+
+  **Selanjutnya:** jalankan notebook ini di Colab (assert parity akan
+  meledak kalau ada masalah numerik — jangan lanjut ke backend kalau
+  itu terjadi), lalu commit `results/metrics.json` ke repo (kecil,
+  menggantikan mock MSW di Benchmark page), simpan `.onnx`+`.npz` di
+  Drive (gitignored, tujuan akhir diupload ke HF Space bareng backend).
+- ⏳ **[6]–[9]** — ablation CLAHE (di model terbaik saja, setelah CI di
+  atas tahu mana yang signifikan lebih baik), backend FastAPI + ONNX
+  Runtime, integrasi web ke backend asli, figure publikasi.
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 

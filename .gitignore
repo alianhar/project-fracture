@@ -4,6 +4,8 @@ runs/
 *.h5
 *.onnx
 *.weights.h5
+*.npz  # bobot head + parameter kalibrasi/OOD, companion .onnx -- disimpan
+       # bareng .onnx di Drive/HF Space, bukan di git (lihat 03_evaluate_export.ipynb)
 
 # Dataset
 data/
