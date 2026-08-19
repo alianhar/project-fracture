@@ -2,15 +2,29 @@
 
 Platform riset klasifikasi patah tulang dari citra X-ray (biner: fractured /
 not fractured) memakai 4 varian ConvNeXt (Tiny, Small, Base, Large). Backend
-rencana FastAPI + ONNX Runtime di Hugging Face Space (Docker, gratis). Tanpa
-autentikasi di level aplikasi, tanpa database — riwayat sesi disimpan di
-`localStorage` browser.
+FastAPI + ONNX Runtime, target deploy **Google Cloud Run** (lihat deviasi di
+bawah). Tanpa autentikasi di level aplikasi, tanpa database — riwayat sesi
+disimpan di `localStorage` browser.
 
 **Hosting frontend menyimpang dari spec §10 (Vercel):** demo saat ini
 di-deploy manual ke VPS pribadi user (`fracture.lapanproject.tech`, Nginx +
 Certbot, di belakang HTTP Basic Auth karena masih 100% data mock — lihat
 bagian Status). Keputusan pindah permanen ke Vercel/tetap di VPS belum
 diambil; jangan asumsikan salah satu tanpa tanya user.
+
+**Hosting backend menyimpang dari spec §9 (Hugging Face Space):** dikonfirmasi
+2026-08-20 — HF Spaces mengubah Docker SDK (+ Gradio) di tier `cpu-basic`
+gratis jadi berbayar **$9/bln (PRO)**, sejak ~8-9 Juli 2026, tanpa pengumuman
+resmi ([sumber](https://discuss.huggingface.co/t/docker-sdk-now-marked-as-paid-when-creating-a-new-space/177580)).
+Tidak ada workaround gratis untuk Docker di HF Spaces. Setelah dikonfirmasi
+ke user dan diberi 3 opsi (bayar PRO / pindah Cloud Run / pakai VPS yang
+sudah ada), **user memilih Google Cloud Run** (free tier permanen 2 juta
+request/bln, scale-to-zero, Docker-native — `api/Dockerfile` sudah
+disesuaikan: listen di `$PORT`, bukan port tetap 7860 ala HF). Bobot model
+(.onnx+.npz) rencana diunduh dari **Google Cloud Storage** saat container
+start (pengganti pola "HF Model repo" di spec asli) — bucket GCS belum
+dibuat, script unduh belum ditulis. Spec §9 perlu diupdate teksnya supaya
+sinkron — belum dilakukan.
 
 **Sumber kebenaran tunggal:** `docs/superpowers/specs/2026-08-12-fracture-classification-design.md`
 (bahasa Indonesia). Kontrak API di §9, requirement frontend di §10. Kalau ada
@@ -187,12 +201,15 @@ Mengikuti urutan eksekusi di spec §13:
   Kalau asumsi identity ini pernah salah, `verify_prob_parity()` di
   `export_onnx.py` akan menangkapnya (selisih ONNX vs Keras >= 1e-4).
 
-  **Belum ada / sengaja ditunda:** repo HF Model (tempat `.onnx`/`.npz`
-  asli disimpan + diunduh saat container start) belum dibuat — `MODEL_DIR`
-  backend masih baca dari disk lokal/mount manual. `/health` belum
-  mencerminkan progres unduh model (`status: "ready"` langsung, cold-start
-  riil belum diimplementasikan). Belum pernah `docker build` (Dockerfile
-  butuh `results/metrics.json` yang belum ada).
+  **Belum ada / sengaja ditunda:** target deploy pindah ke Google Cloud
+  Run (lihat deviasi spec §9 di puncak file) — bucket GCS tempat
+  `.onnx`/`.npz` asli disimpan + diunduh saat container start belum
+  dibuat, `MODEL_DIR` backend masih baca dari disk lokal/mount manual.
+  `/health` belum mencerminkan progres unduh model (`status: "ready"`
+  langsung, cold-start riil belum diimplementasikan). Belum pernah
+  `docker build` (Dockerfile butuh `results/metrics.json` yang belum ada).
+  `api/Dockerfile` sudah disesuaikan Cloud Run (`$PORT`, bukan port tetap
+  7860 ala HF), belum pernah benar-benar di-deploy/dites di Cloud Run.
 - ⏳ **[6], [8], [9]** — ablation CLAHE (di model terbaik saja, setelah
   hasil notebook 03 selesai & CI dibandingkan), integrasi web ke backend
   asli (ganti mock MSW), figure publikasi.
