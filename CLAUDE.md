@@ -140,14 +140,62 @@ Mengikuti urutan eksekusi di spec §13:
   `results/metrics.json` yang dihasilkan — itu spec §11, dikerjakan
   terpisah setelah model terbaik diketahui dari CI di sini.
 
-  **Selanjutnya:** jalankan notebook ini di Colab (assert parity akan
-  meledak kalau ada masalah numerik — jangan lanjut ke backend kalau
-  itu terjadi), lalu commit `results/metrics.json` ke repo (kecil,
-  menggantikan mock MSW di Benchmark page), simpan `.onnx`+`.npz` di
-  Drive (gitignored, tujuan akhir diupload ke HF Space bareng backend).
-- ⏳ **[6]–[9]** — ablation CLAHE (di model terbaik saja, setelah CI di
-  atas tahu mana yang signifikan lebih baik), backend FastAPI + ONNX
-  Runtime, integrasi web ke backend asli, figure publikasi.
+  **Update 2026-08-19/20:** notebook sudah dijalankan nyata di Colab web
+  (bukan VS Code — VS Code↔kernel remote Colab terbukti tidak stabil
+  untuk cell yang lama, `Canceled future for execute_request`). Proses
+  debug panjang (7 iterasi fix, lihat commit `f9ec5fc`..`6f4e1a6`)
+  sampai **Tiny berhasil ekspor ONNX penuh + lolos verifikasi parity**.
+  Masalah terbesar: ekspor ONNX ConvNeXt gagal berulang kali
+  (`StatefulPartitionedCall` dari depthwise-conv custom-gradient,
+  `Erfc`/`TFL_GELU` tidak didukung tf2onnx) — solusi akhir: pivot lewat
+  TFLite (`TF→TFLite→ONNX`, bukan `TF graph→ONNX` langsung) + custom op
+  handler tf2onnx utk `TFL_GELU`. **Konsekuensi: ekspor ONNX jadi
+  2-output `[prob, featmap]`** (bukan 3-output `prob/featmap/z` yang
+  ditulis literal di spec §8) — `z` (pra-aktivasi Dense-512) dihitung
+  manual NumPy di server dari `featmap`+bobot `.npz`, karena `Dense+gelu`
+  Keras menyatu, tidak ada hook ke pra-aktivasi utk dijadikan output ONNX
+  terpisah. **Spec §8 perlu diupdate teksnya** supaya sinkron — belum
+  dilakukan, dicatat di sini dulu. Kedua, kernel OOM berulang saat loop 4
+  backbone dalam 1 sesi (dugaan user, terkonfirmasi lewat log
+  `AsyncIOLoopKernelRestarter` — restart otomatis Jupyter, ciri OOM-killer
+  Linux) — mitigasi: `clear_session()`+`gc.collect()` antar iterasi,
+  monitoring RAM/VRAM eksplisit, DAN resume per-backbone lewat cache
+  `{backbone}_metrics.json` di Drive (kalau kernel mati, backbone yang
+  sudah selesai tidak perlu diulang). **Status saat tulisan ini dibuat:
+  loop 4-backbone MASIH BERJALAN** (Small/Base/Large belum terkonfirmasi
+  selesai) — `results/metrics.json` belum ada di repo.
+- 🔶 **[7] Backend FastAPI — scaffold selesai & TERUJI LOKAL (model ONNX
+  sintetis), BELUM pernah lihat model ConvNeXt sungguhan.** `api/` baru:
+  `main.py` (6 endpoint spec §9), `schemas.py` (cermin persis
+  `web/src/lib/api/types.ts`), `inference.py` (ONNX Runtime + NumPy murni
+  — TANPA TensorFlow, konsolidasi predict/explain/compare ke satu
+  `_full_analysis()` supaya kalibrasi & OOD tidak bisa drift antar
+  endpoint), `model_registry.py` (lazy-load + LRU cache, default 2 model
+  resident), `config.py`, `Dockerfile`, `requirements.txt`. Diuji end-to-
+  end via `fastapi.testclient.TestClient` + model ONNX sintetis buatan
+  sendiri (bukan ConvNeXt asli) — `/health`, `/models`, `/predict`,
+  `/explain`, `/predict/batch` semua jalan; `/compare` gagal-cepat 503
+  yang jelas saat model lain belum ada (diharapkan, cuma `tiny` sintetis
+  yg dibuat).
+
+  **Efek samping penting:** `src/fracture/data.py` di-refactor —
+  `preprocess_image()` TIDAK lagi memanggil TensorFlow langsung (Keras
+  `convnext.preprocess_input` dikonfirmasi identity murni, `return x`),
+  import TF di `make_generators()` dijadikan lazy. Ini supaya backend
+  TIDAK butuh TensorFlow sama sekali (spec §8: image Docker ~400MB bukan
+  ~3GB) sambil tetap satu sumber preprocessing (fix F1, tidak duplikasi).
+  Kalau asumsi identity ini pernah salah, `verify_prob_parity()` di
+  `export_onnx.py` akan menangkapnya (selisih ONNX vs Keras >= 1e-4).
+
+  **Belum ada / sengaja ditunda:** repo HF Model (tempat `.onnx`/`.npz`
+  asli disimpan + diunduh saat container start) belum dibuat — `MODEL_DIR`
+  backend masih baca dari disk lokal/mount manual. `/health` belum
+  mencerminkan progres unduh model (`status: "ready"` langsung, cold-start
+  riil belum diimplementasikan). Belum pernah `docker build` (Dockerfile
+  butuh `results/metrics.json` yang belum ada).
+- ⏳ **[6], [8], [9]** — ablation CLAHE (di model terbaik saja, setelah
+  hasil notebook 03 selesai & CI dibandingkan), integrasi web ke backend
+  asli (ganti mock MSW), figure publikasi.
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 

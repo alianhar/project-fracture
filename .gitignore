@@ -11,6 +11,9 @@ runs/
 data/
 Bone_Fracture_Dataset/
 
+# Artefak backend (diunduh dari HF Model repo saat container start / disalin manual saat dev lokal)
+api/model_artifacts/
+
 # Python
 __pycache__/
 *.py[cod]

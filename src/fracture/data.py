@@ -1,10 +1,17 @@
 """
 SATU-SATUNYA definisi preprocessing (spec §4) — diimpor oleh notebook
-training DAN (nanti) backend inference. Cacat F1 di eksperimen lama
-(`data experiment/`) terjadi karena preprocessing ditulis ulang di banyak
-tempat berbeda dengan nilai berbeda (rescale=1./255 di train/val, tapi
-preprocess_input ConvNeXt — yang ternyata no-op — di test). Modul ini
-mencegah itu terulang: hanya ADA SATU jalur preprocessing.
+training DAN backend inference (`api/inference.py`). Cacat F1 di
+eksperimen lama (`data experiment/`) terjadi karena preprocessing
+ditulis ulang di banyak tempat berbeda dengan nilai berbeda
+(rescale=1./255 di train/val, tapi preprocess_input ConvNeXt — yang
+ternyata no-op — di test). Modul ini mencegah itu terulang: hanya ADA
+SATU jalur preprocessing.
+
+TensorFlow SENGAJA tidak diimpor di level modul ini -- backend `api/`
+butuh `preprocess_image()`/`IMG_SIZE`/`CLASS_NAMES` TANPA TensorFlow
+(spec §8: image Docker ~400MB, bukan ~3GB). Fungsi yang benar-benar
+butuh TF (`make_generators`, dipakai notebook training/evaluasi saja)
+meng-import TF secara lazy di dalam fungsinya sendiri.
 """
 
 import json
@@ -12,8 +19,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.applications.convnext import preprocess_input as _convnext_preprocess
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 IMG_SIZE = 224
 CLASS_NAMES = ("fractured", "not_fractured")  # urutan alfabetis = class_indices Keras
@@ -22,13 +27,24 @@ CLASS_NAMES = ("fractured", "not_fractured")  # urutan alfabetis = class_indices
 def preprocess_image(img: np.ndarray) -> np.ndarray:
     """
     ConvNeXt native: input [0,255] mentah, TANPA rescale=1./255.
-    `preprocess_input` bawaan Keras untuk ConvNeXt adalah placeholder
-    no-op (normalisasi sudah jadi layer di dalam model) — dipanggil di
-    sini murni untuk konsistensi & dokumentasi eksplisit, BUKAN karena
-    ia benar-benar melakukan sesuatu. Yang penting: TIDAK ADA rescale
-    apa pun di sini, beda dengan bug F1 di eksperimen lama.
+
+    TIDAK memanggil tensorflow.keras.applications.convnext.preprocess_input
+    secara langsung -- meski itulah definisi resminya -- supaya fungsi ini
+    (dipakai backend `api/inference.py`) tidak memaksa TensorFlow ter-install.
+    AMAN karena preprocess_input ConvNeXt di Keras adalah identity murni
+    (`return x`) -- normalisasi ConvNeXt sudah jadi Normalization layer DI
+    DALAM arsitektur model itu sendiri, bukan di preprocessing eksternal
+    (beda dari ResNet/VGG dkk yang preprocess_input-nya benar-benar
+    melakukan sesuatu). Kalau asumsi ini pernah salah (mis. Keras versi
+    baru mengubah perilaku), `verify_prob_parity()` di
+    src/fracture/export_onnx.py akan menangkapnya (selisih ONNX vs Keras
+    >= 1e-4) -- bukan klaim tanpa jaring pengaman.
+
+    Yang penting: TIDAK ADA rescale apa pun di sini, beda dengan bug F1 di
+    eksperimen lama (rescale=1./255 di train/val, preprocess_input konstan
+    di test).
     """
-    return _convnext_preprocess(img)
+    return np.asarray(img, dtype=np.float32)
 
 
 def load_manifest(manifest_path: str | Path) -> dict:
@@ -89,6 +105,8 @@ def make_generators(
     eksperimen lama Small, val_gen dibuat dari datagen yang sama dengan
     train, ikut teraugmentasi dan tidak di-shuffle=False).
     """
+    from tensorflow.keras.preprocessing.image import ImageDataGenerator  # lazy -- lihat docstring modul
+
     augment_train = augment_train or {}
     df = manifest_to_dataframe(manifest_path, dataset_root)
 
