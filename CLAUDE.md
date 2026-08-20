@@ -308,9 +308,22 @@ Mengikuti urutan eksekusi di spec §13:
   Large 752MB di instance ini) -> **keempat model konsisten "Fractured"**
   (Tiny 85.1%/902ms, Small 98.8%/1125ms, Base 99.9%/1278ms, Large
   99.9%/1701ms). Nol error console browser dari awal sampai akhir sesi.
-- ⏳ **[6], [9]** — ablation CLAHE (di model terbaik saja — CI keempat
-  model overlap semua, belum ada satu yang signifikan terbaik), figure
-  publikasi.
+- 🔶 **[6] Ablation CLAHE — infrastruktur selesai, BELUM dijalankan di
+  Colab.** Dijalankan di Base saja (pilihan operasional, dikonfirmasi
+  eksplisit ke user — CI 95% keempat backbone overlap semua, jadi BUKAN
+  klaim "Base terbukti terbaik"). `src/fracture/clahe.py` (parameter
+  diwarisi dari `data experiment/convnext_tiny.py` — dulu dead code,
+  sekarang benar-benar dipakai), `configs/base_clahe.yaml` (override
+  tipis, `base.yaml` tidak disentuh — hash 4 model utama tetap sama),
+  `notebooks/04_clahe_ablation.ipynb` (18 sel — latih Base+CLAHE dari
+  nol, evaluasi accuracy/f1/auroc bootstrap CI, gabung dgn without_clahe
+  dari `results/metrics.json` Base yg sudah ada, tulis ke
+  `clahe_ablation`). Diuji lokal: CLAHE mengubah kontras nyata (std
+  44.1→48.1 di X-ray asli), backend tetap tidak terpengaruh.
+  **Selanjutnya: jalankan notebook ini di Colab** (training penuh Base
+  lagi, ~1-2 jam) — belum dilakukan.
+- ⏳ **[9]** — figure & tabel siap publikasi (spec §12: "seluruhnya
+  dibangkitkan otomatis dari results/metrics.json").
 - ⏳ **Belum diverifikasi ulang:** Grad-CAM parity (`verify_gradcam_parity`,
   fix bug forward-pass-ganda di commit `26c32da`) belum pernah dijalankan
   ulang dengan model sungguhan — `results/metrics.json` yang ter-commit
