@@ -14,6 +14,11 @@ Bone_Fracture_Dataset/
 # Artefak backend (diunduh dari HF Model repo saat container start / disalin manual saat dev lokal)
 api/model_artifacts/
 
+# Salinan lokal hasil unduhan dari Drive (.onnx/.npz/.json ekspor notebook 03/04) --
+# duplikat data yang sumbernya di Drive, bukan aset repo. results/metrics.json
+# tetap di-commit terpisah (itu sumber kebenaran utk web Benchmark/laporan).
+fracture-exports/
+
 # Python
 __pycache__/
 *.py[cod]
