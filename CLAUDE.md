@@ -209,41 +209,69 @@ Mengikuti urutan eksekusi di spec §13:
   **Status saat tulisan ini dibuat: loop 4-backbone MASIH BERJALAN**
   (Base/Large belum terkonfirmasi selesai) — `results/metrics.json`
   belum ada di repo.
-- 🔶 **[7] Backend FastAPI — scaffold selesai & TERUJI LOKAL (model ONNX
-  sintetis), BELUM pernah lihat model ConvNeXt sungguhan.** `api/` baru:
-  `main.py` (6 endpoint spec §9), `schemas.py` (cermin persis
+- ✅ **[7] Backend FastAPI — LIVE di Cloud Run, teruji end-to-end dengan
+  model ConvNeXt sungguhan (2026-08-20).** URL:
+  `https://fracture-api-607128796608.asia-southeast2.run.app`. Project GCP:
+  `project-fracture-506109`, region `asia-southeast2` (Jakarta). Model
+  (`.onnx`+`.npz` ×4, ~1.45GB total) disimpan di bucket
+  `gs://project-fracture-506109-models`, diunduh LAZY per-model saat
+  pertama diminta (bukan semua di awal container start) — konsisten
+  dengan LRU cache spec §9.
+
+  `api/`: `main.py` (6 endpoint spec §9), `schemas.py` (cermin
   `web/src/lib/api/types.ts`), `inference.py` (ONNX Runtime + NumPy murni
   — TANPA TensorFlow, konsolidasi predict/explain/compare ke satu
-  `_full_analysis()` supaya kalibrasi & OOD tidak bisa drift antar
-  endpoint), `model_registry.py` (lazy-load + LRU cache, default 2 model
-  resident), `config.py`, `Dockerfile`, `requirements.txt`. Diuji end-to-
-  end via `fastapi.testclient.TestClient` + model ONNX sintetis buatan
-  sendiri (bukan ConvNeXt asli) — `/health`, `/models`, `/predict`,
-  `/explain`, `/predict/batch` semua jalan; `/compare` gagal-cepat 503
-  yang jelas saat model lain belum ada (diharapkan, cuma `tiny` sintetis
-  yg dibuat).
+  `_full_analysis()`), `model_registry.py` (lazy-load + LRU cache + unduh
+  GCS via file sementara `.part` + rename atomik), `config.py`,
+  `api/Dockerfile`, `cloudbuild.yaml`, `.gcloudignore`. Semua endpoint
+  dites live dgn `curl`: `/health` 200, `/models` 200, `/metrics` 200
+  (data asli 4 model), `/predict` 200 (gambar bukan X-ray BENAR terdeteksi
+  `is_ood: true` → `decision: "abstain"` — gerbang OOD terbukti bekerja
+  dgn bobot asli, bukan cuma sintetis), `/explain` 200 (Grad-CAM PNG,
+  latency turun dari ~4.3s ke ~0.6s setelah model ke-cache).
 
-  **Efek samping penting:** `src/fracture/data.py` di-refactor —
-  `preprocess_image()` TIDAK lagi memanggil TensorFlow langsung (Keras
-  `convnext.preprocess_input` dikonfirmasi identity murni, `return x`),
-  import TF di `make_generators()` dijadikan lazy. Ini supaya backend
-  TIDAK butuh TensorFlow sama sekali (spec §8: image Docker ~400MB bukan
-  ~3GB) sambil tetap satu sumber preprocessing (fix F1, tidak duplikasi).
-  Kalau asumsi identity ini pernah salah, `verify_prob_parity()` di
-  `export_onnx.py` akan menangkapnya (selisih ONNX vs Keras >= 1e-4).
+  **Dua bug ditemukan & diperbaiki lewat deploy pertama yang gagal:**
+  1. `ModuleNotFoundError: pandas` — `src/fracture/data.py` masih
+     `import pandas` di level modul (kelewat waktu TF dijadikan lazy
+     sebelumnya), padahal `preprocess_image()` tidak butuh itu. Fix:
+     `from __future__ import annotations` + lazy-import di
+     `manifest_to_dataframe()` saja.
+  2. `RiskCoveragePoint` field `threshold` (di `types.ts`/`schemas.py`)
+     vs `abstain_band` (yang benar-benar dihasilkan
+     `evaluate.py risk_coverage_curve()`) — dua nama utk hal sama, tidak
+     pernah disatukan karena baru sekarang divalidasi lewat schema.
+     Disatukan ke `abstain_band` (lebih akurat) di `schemas.py`+
+     `types.ts`+`mocks/fixtures/metrics.ts`.
 
-  **Belum ada / sengaja ditunda:** target deploy pindah ke Google Cloud
-  Run (lihat deviasi spec §9 di puncak file) — bucket GCS tempat
-  `.onnx`/`.npz` asli disimpan + diunduh saat container start belum
-  dibuat, `MODEL_DIR` backend masih baca dari disk lokal/mount manual.
-  `/health` belum mencerminkan progres unduh model (`status: "ready"`
-  langsung, cold-start riil belum diimplementasikan). Belum pernah
-  `docker build` (Dockerfile butuh `results/metrics.json` yang belum ada).
-  `api/Dockerfile` sudah disesuaikan Cloud Run (`$PORT`, bukan port tetap
-  7860 ala HF), belum pernah benar-benar di-deploy/dites di Cloud Run.
-- ⏳ **[6], [8], [9]** — ablation CLAHE (di model terbaik saja, setelah
-  hasil notebook 03 selesai & CI dibandingkan), integrasi web ke backend
-  asli (ganti mock MSW), figure publikasi.
+  **Efek samping penting (masih berlaku):** `src/fracture/data.py`
+  `preprocess_image()` TIDAK memanggil TensorFlow langsung (Keras
+  `convnext.preprocess_input` dikonfirmasi identity murni). Kalau asumsi
+  ini pernah salah, `verify_prob_parity()` akan menangkapnya.
+
+  **Belum ada:** `/health` belum mencerminkan progres unduh model
+  (`status: "ready"` langsung — cold-start riil per-model belum
+  tercermin di endpoint ini, meski unduhan GCS-nya sendiri sudah jalan).
+  Autentikasi GCS container pakai default service account Compute Cloud
+  Run (belum diaudit permission-nya secara eksplisit — cukup luas by
+  default, perlu ditinjau kalau mau diperketat).
+
+  **Juga diperbaiki:** `fracture-runs/large_789f2c2e/` (evidence yang
+  ke-commit sebelumnya) ternyata STALE — hash config-nya tidak cocok
+  dgn `configs/*.yaml` yang ada sekarang (`f6062dcc` yang benar). Isi
+  status.json identik (bukan retraining ulang), cuma evidence salah
+  alamat — sudah diganti ke `fracture-runs/large_f6062dcc/`.
+- ⏳ **[6], [8], [9]** — ablation CLAHE (di model terbaik saja — CI
+  keempat model overlap semua, belum ada satu yang signifikan terbaik),
+  integrasi web ke backend asli (ganti mock MSW dgn URL Cloud Run di
+  atas), figure publikasi.
+- ⏳ **Belum diverifikasi ulang:** Grad-CAM parity (`verify_gradcam_parity`,
+  fix bug forward-pass-ganda di commit `26c32da`) belum pernah dijalankan
+  ulang dengan model sungguhan — `results/metrics.json` yang ter-commit
+  masih pakai angka dari run SEBELUM fix (Tiny 4.75e-2, Small 2.6e-2,
+  jauh di atas target 1e-4; Base/Large jauh lebih baik, 2e-3/1.4e-3).
+  Tidak blocking untuk demo/deploy, tapi perlu diputuskan sebelum
+  angka ini dipakai di laporan skripsi: re-run demi angka bersih, atau
+  terima dgn catatan metodologis.
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 
