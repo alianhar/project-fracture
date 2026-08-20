@@ -336,8 +336,22 @@ Mengikuti urutan eksekusi di spec §13:
   notebook 03. Ditambahkan `shutil.copy2()` ke Drive di commit `99f711d`
   (fix utk run berikutnya kalau perlu, TIDAK memengaruhi hasil run ini —
   user sempat masih di sesi aktif, recovery manual sukses).
-- ⏳ **[9]** — figure & tabel siap publikasi (spec §12: "seluruhnya
-  dibangkitkan otomatis dari results/metrics.json").
+- ✅ **[9] Figure & tabel siap publikasi — SELESAI (2026-08-21).**
+  `scripts/generate_figures.py` (butuh matplotlib saja, jalan lokal tanpa
+  Colab/TF) membaca `results/metrics.json` -> `results/figures/` (7
+  figure: ROC, PR, reliability diagram, confusion matrix, risk-coverage,
+  accuracy comparison bar+CI, ablation CLAHE -- masing-masing PNG 300dpi
+  + PDF vektor) + `results/tables/` (`tables.md` dgn narasi analisis
+  signifikansi CI 95% otomatis spec §7/§14, `model_comparison.tex` +
+  `clahe_ablation.tex` siap `\input{}`). Nol angka hardcode.
+
+  **Palet warna diperbaiki lewat skill `dataviz`:** draf pertama reuse
+  `MODEL_CHART_COLORS` dari web, tapi kontrasnya terlalu rendah utk kurva
+  berhimpit di figure statis (Large `#DCEEF2` nyaris putih) -- diganti
+  palet kategorikal tervalidasi (`validate_palette.js`: lightness band +
+  CVD separation PASS) + linestyle/marker per model (terbaca hitam-putih).
+
+  **Dengan ini seluruh urutan eksekusi spec §13 ([1]-[9]) SELESAI.**
 - ⏳ **Belum diverifikasi ulang:** Grad-CAM parity (`verify_gradcam_parity`,
   fix bug forward-pass-ganda di commit `26c32da`) belum pernah dijalankan
   ulang dengan model sungguhan — `results/metrics.json` yang ter-commit
