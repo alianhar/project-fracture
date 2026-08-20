@@ -6,11 +6,12 @@ FastAPI + ONNX Runtime, target deploy **Google Cloud Run** (lihat deviasi di
 bawah). Tanpa autentikasi di level aplikasi, tanpa database — riwayat sesi
 disimpan di `localStorage` browser.
 
-**Hosting frontend menyimpang dari spec §10 (Vercel):** demo saat ini
-di-deploy manual ke VPS pribadi user (`fracture.lapanproject.tech`, Nginx +
-Certbot, di belakang HTTP Basic Auth karena masih 100% data mock — lihat
-bagian Status). Keputusan pindah permanen ke Vercel/tetap di VPS belum
-diambil; jangan asumsikan salah satu tanpa tanya user.
+**Hosting frontend menyimpang dari spec §10 (Vercel):** demo di-deploy manual
+ke VPS pribadi user (`fracture.lapanproject.tech`, Nginx + Certbot). **Sejak
+2026-08-20: PUBLIK, TANPA Basic Auth, TERSAMBUNG BACKEND ASLI** (bukan mock
+lagi) — lihat bagian Status untuk detail. Keputusan pindah permanen ke
+Vercel/tetap di VPS belum diambil; jangan asumsikan salah satu tanpa tanya
+user.
 
 **Hosting backend menyimpang dari spec §9 (Hugging Face Space):** dikonfirmasi
 2026-08-20 — HF Spaces mengubah Docker SDK (+ Gradio) di tier `cpu-basic`
@@ -260,10 +261,47 @@ Mengikuti urutan eksekusi di spec §13:
   dgn `configs/*.yaml` yang ada sekarang (`f6062dcc` yang benar). Isi
   status.json identik (bukan retraining ulang), cuma evidence salah
   alamat — sudah diganti ke `fracture-runs/large_f6062dcc/`.
-- ⏳ **[6], [8], [9]** — ablation CLAHE (di model terbaik saja — CI
-  keempat model overlap semua, belum ada satu yang signifikan terbaik),
-  integrasi web ke backend asli (ganti mock MSW dgn URL Cloud Run di
-  atas), figure publikasi.
+- ✅ **[8] Integrasi web ke backend asli — LIVE, publik, teruji (2026-08-20).**
+  `fracture.lapanproject.tech` sekarang: (1) **Basic Auth dicabut** —
+  situs publik, `auth_basic`/`auth_basic_user_file` dihapus dari Nginx
+  config; (2) **mock dimatikan** — `web/.env.production` diupdate
+  (`VITE_API_BASE_URL`=URL Cloud Run, `VITE_USE_MOCKS=false`), build
+  ulang, di-scp+extract ke `/var/www/fracture/dist` (pola manual biasa,
+  RAM VPS 842MB tidak boleh `npm install`/`build` di server).
+
+  **Bug ketemu saat deploy (root-cause dulu, bukan asal patch):**
+  build production PERTAMA tetap membawa URL backend kosong + mock=true
+  walau `.env.local` sudah diupdate — ternyata `web/.env.production`
+  (file terpisah, di-commit sejak 14 Agustus, sengaja didesain menang
+  di atas `.env.local` utk `npm run build`/mode production di Vite) yang
+  belum diupdate. Diperbaiki, dibuktikan lewat grep bundle JS
+  (`fracture-api-607128796608` benar-benar ada di
+  `dist/assets/query-keys-*.js`) sebelum deploy.
+
+  **CSP header di Nginx (`connect-src 'self'`) akan MEMBLOKIR fetch() ke
+  backend origin berbeda** kalau tidak diupdate — ketahuan lewat baca
+  config Nginx langsung sebelum deploy (bukan ketahuan belakangan dari
+  situs rusak). Diperbaiki: `connect-src 'self' https://fracture-api-
+  607128796608.asia-southeast2.run.app`. Hash CSP `script-src` (utk
+  inline anti-FOUC script) dihitung ulang & dikonfirmasi TIDAK berubah
+  (script anti-FOUC di `index.html` identik dgn build sebelumnya).
+
+  **Diverifikasi live via curl** (bukan cuma "deployed", teruji fungsi):
+  situs 200 tanpa auth, header CSP+security lengkap & benar, asset JS
+  ter-hash baru bisa diakses, preflight CORS dari origin
+  `fracture.lapanproject.tech` ke backend Cloud Run sukses (`allow-
+  origin: *`), redirect HTTP->HTTPS masih jalan, teks "Mode demo" (dari
+  `DemoModeBanner`, auto-hide saat `VITE_USE_MOCKS=false`, sudah didesain
+  begini sejak awal) tidak ada lagi di bundle. **Belum diverifikasi**:
+  rendering visual sungguhan di browser (extension Chrome Claude tidak
+  terhubung saat ini) — user disarankan cek manual sekali.
+
+  Backup tersimpan di server sebelum overwrite: `/var/backups/fracture-
+  dist-20260820-121030.tar.gz` + `fracture-nginx-20260820-121030.conf`
+  (rollback kalau perlu).
+- ⏳ **[6], [9]** — ablation CLAHE (di model terbaik saja — CI keempat
+  model overlap semua, belum ada satu yang signifikan terbaik), figure
+  publikasi.
 - ⏳ **Belum diverifikasi ulang:** Grad-CAM parity (`verify_gradcam_parity`,
   fix bug forward-pass-ganda di commit `26c32da`) belum pernah dijalankan
   ulang dengan model sungguhan — `results/metrics.json` yang ter-commit
