@@ -175,9 +175,40 @@ Mengikuti urutan eksekusi di spec §13:
   Linux) — mitigasi: `clear_session()`+`gc.collect()` antar iterasi,
   monitoring RAM/VRAM eksplisit, DAN resume per-backbone lewat cache
   `{backbone}_metrics.json` di Drive (kalau kernel mati, backbone yang
-  sudah selesai tidak perlu diulang). **Status saat tulisan ini dibuat:
-  loop 4-backbone MASIH BERJALAN** (Small/Base/Large belum terkonfirmasi
-  selesai) — `results/metrics.json` belum ada di repo.
+  sudah selesai tidak perlu diulang).
+
+  **Update lanjutan (masih 2026-08-20):** Tiny selesai (parity prob
+  9.95e-5, LOLOS di ambang asli), tapi Grad-CAM parity Tiny 4.75e-2 —
+  jauh di atas 1e-4, sempat "diakali" user langsung di cell Colab
+  (`atol=0.05`) supaya lanjut, BUKAN diperbaiki. **Root cause ditemukan
+  & diperbaiki (bukan cuma dilonggarkan):** `verify_gradcam_parity()` di
+  notebook mengambil `gap_feat` dan `featmap_np` dari DUA panggilan
+  `.predict()` terpisah (bug) alih-alih satu forward pass konsisten
+  (`gradcam_groundtruth()` sudah benar dari awal, satu `grad_model` call)
+  — inkonsistensi kecil ini teramplifikasi besar utk prediksi yang
+  sangat percaya diri (sigmoid'(y)→0 di dekat saturasi). Fix: gabung jadi
+  satu `combined_model.predict()`. **Belum diverifikasi ulang dengan model
+  sungguhan** (perlu Tiny dijalankan ulang).
+
+  Small lanjut jalan tapi gagal di parity **prob** (bukan Grad-CAM):
+  1.68e-4 vs ambang asli 1e-4. Dianalisis genuinely noise floating-point
+  wajar 3-runtime (TF eager→TFLite→ONNX Runtime), bukan bug. **Keputusan
+  eksplisit user: longgarkan ambang prob parity ke 5e-4** (dari 1e-4 di
+  spec §8/§14 asli) — `src/fracture/export_onnx.py verify_prob_parity()`
+  default diupdate. Kalau Base/Large masih gagal di 5e-4, evaluasi ulang
+  datanya dulu sebelum melonggarkan lagi. **Spec §8/§14 perlu diupdate
+  teksnya** (kedua deviasi: 2-output ONNX + ambang parity 5e-4) — belum
+  dilakukan.
+
+  **PENTING sebelum lanjut run berikutnya:** cache `tiny_metrics.json` +
+  `tiny.onnx` + `tiny_head.npz` di Drive HARUS DIHAPUS manual dulu --
+  resume-cache tidak tahu logic verifikasi berubah, kalau dibiarkan Tiny
+  bakal di-skip dengan hasil Grad-CAM parity lama yang belum tervalidasi
+  fix-nya.
+
+  **Status saat tulisan ini dibuat: loop 4-backbone MASIH BERJALAN**
+  (Base/Large belum terkonfirmasi selesai) — `results/metrics.json`
+  belum ada di repo.
 - 🔶 **[7] Backend FastAPI — scaffold selesai & TERUJI LOKAL (model ONNX
   sintetis), BELUM pernah lihat model ConvNeXt sungguhan.** `api/` baru:
   `main.py` (6 endpoint spec §9), `schemas.py` (cermin persis

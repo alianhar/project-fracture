@@ -166,10 +166,19 @@ def save_head_artifacts(path: str, weights: dict, extra: dict | None = None) -> 
     np.savez(path, **payload)
 
 
-def verify_prob_parity(keras_model: tf.keras.Model, onnx_path: str, sample_batch: np.ndarray, atol: float = 1e-4) -> float:
+def verify_prob_parity(keras_model: tf.keras.Model, onnx_path: str, sample_batch: np.ndarray, atol: float = 5e-4) -> float:
     """Bandingkan output `prob` ONNX vs Keras asli pada satu batch sampel --
-    selisih absolut maksimum HARUS < atol (spec §8). Return selisih maksimum
-    (raise AssertionError kalau melampaui atol).
+    selisih absolut maksimum HARUS < atol. Return selisih maksimum (raise
+    AssertionError kalau melampaui atol).
+
+    atol DEVIASI dari spec §8/§14 (awalnya <1e-4) -- dilonggarkan ke 5e-4
+    per keputusan eksplisit user (2026-08-20), setelah Tiny lolos tipis
+    (9.95e-5) tapi Small gagal tipis (1.68e-4) di angka asli. Ini genuinely
+    noise floating-point wajar dari 3 runtime independen dirangkai
+    (TF eager -> TFLite -> ONNX Runtime), BUKAN bug -- tapi tetap ketat
+    cukup utk menangkap kesalahan nyata (tanda terbalik, output salah,
+    dst). Kalau Base/Large masih gagal di angka ini, evaluasi ulang
+    datanya sebelum melonggarkan lagi -- jangan asal naikkan terus.
 
     Catatan: verifikasi parity Grad-CAM (analitik vs GradientTape) sengaja
     TIDAK ditaruh di sini -- itu butuh TensorFlow GradientTape di sisi
