@@ -1,20 +1,27 @@
 """
 Konfigurasi backend -- path model, metadata statis (`/models`), dan
-pengaturan lain. Path model default mengasumsikan file `.onnx`/`.npz`
-sudah ada di disk container (diunduh dari HF Model repo saat container
-start -- lihat Dockerfile/entrypoint, BELUM diimplementasikan di sini
-karena repo HF Model belum dibuat).
+pengaturan lain. File `.onnx`/`.npz` diunduh LAZY dari Google Cloud
+Storage saat pertama dibutuhkan (lihat model_registry.py) -- MODEL_DIR
+di sini cuma direktori cache lokal (disk container Cloud Run bersifat
+ephemeral, tapi cukup untuk cache selama satu instance hidup, sejalan
+dgn desain LRU: paling banyak `MODEL_CACHE_SIZE` model resident sekaligus).
 """
 
 import os
 from pathlib import Path
 
-# Direktori tempat {tiny,small,base,large}.onnx + {tiny,small,base,large}_head.npz
-# berada. Default RELATIF terhadap file ini (api/model_artifacts/), BUKAN
-# cwd proses -- supaya konsisten mau dijalankan dari mana pun
-# (`uvicorn api.main:app` dari root repo, dari dalam api/, dsb). Override
-# lewat env var saat deploy (HF Space container set path absolut).
+# Direktori CACHE lokal tempat {tiny,small,base,large}.onnx +
+# {tiny,small,base,large}_head.npz disimpan setelah diunduh dari GCS (atau
+# di-mount/diisi manual saat dev lokal). Default RELATIF terhadap file ini
+# (api/model_artifacts/), BUKAN cwd proses -- supaya konsisten mau
+# dijalankan dari mana pun. Override lewat env var saat deploy.
 MODEL_DIR = Path(os.environ.get("MODEL_DIR", str(Path(__file__).resolve().parent / "model_artifacts")))
+
+# Bucket GCS tempat .onnx/.npz ASLI disimpan (spec Sec9 pengganti "HF Model
+# repo" -- lihat CLAUDE.md, deviasi krn HF Spaces Docker jadi berbayar).
+# Kalau kosong (default), model_registry.get_model() TIDAK mencoba unduh --
+# murni baca dari MODEL_DIR lokal (cocok utk dev/test lokal spt sekarang).
+GCS_BUCKET = os.environ.get("GCS_BUCKET", "")
 
 IMG_SIZE = 224
 
