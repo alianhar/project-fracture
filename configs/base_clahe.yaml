@@ -1,0 +1,9 @@
+# Override tambahan utk ablation CLAHE (spec §11) -- dimerge SETELAH
+# base.yaml + base_model.yaml (backbone=base), HANYA menambah use_clahe.
+# base.yaml SENGAJA TIDAK disentuh -- kalau use_clahe ditambahkan ke situ,
+# hash config tiny/small/base/large yang SUDAH dilatih+dievaluasi akan
+# berubah (config_hash dihitung dari SELURUH dict), memutus tautan ke
+# fracture-runs/{backbone}_{hash}/ yang sudah ada. Base config tanpa key
+# ini = use_clahe False (default eksplisit di
+# src/fracture/data.py make_generators()).
+use_clahe: true

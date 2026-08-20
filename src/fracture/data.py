@@ -110,25 +110,39 @@ def make_generators(
     batch_size: int = 16,
     seed: int = 42,
     augment_train: dict | None = None,
+    use_clahe: bool = False,
 ):
     """Generator train/val/test dari split_manifest.json.
 
     val & test SELALU tanpa augmentasi dan shuffle=False (fix F5 — di
     eksperimen lama Small, val_gen dibuat dari datagen yang sama dengan
     train, ikut teraugmentasi dan tidak di-shuffle=False).
+
+    `use_clahe` -- spec §11 ablation (Base saja, lihat CLAUDE.md). Kalau
+    True, CLAHE diterapkan SEBELUM preprocess_image(), konsisten di
+    train/val/test (bukan cuma train) sesuai spec §11. Default False --
+    TIDAK mengubah perilaku training 4 model utama yang sudah selesai.
     """
     from tensorflow.keras.preprocessing.image import ImageDataGenerator  # lazy -- lihat docstring modul
+
+    if use_clahe:
+        from .clahe import apply_clahe
+
+        def _preprocessing_function(img):
+            return preprocess_image(apply_clahe(img))
+    else:
+        _preprocessing_function = preprocess_image
 
     augment_train = augment_train or {}
     df = manifest_to_dataframe(manifest_path, dataset_root)
 
     train_datagen = ImageDataGenerator(
-        preprocessing_function=preprocess_image,
+        preprocessing_function=_preprocessing_function,
         rotation_range=augment_train.get("rotation_range", 15),
         zoom_range=augment_train.get("zoom_range", 0.15),
         horizontal_flip=augment_train.get("horizontal_flip", True),
     )
-    eval_datagen = ImageDataGenerator(preprocessing_function=preprocess_image)
+    eval_datagen = ImageDataGenerator(preprocessing_function=_preprocessing_function)
 
     common = dict(x_col="filename", y_col="class", target_size=(img_size, img_size),
                   batch_size=batch_size, class_mode="binary")
