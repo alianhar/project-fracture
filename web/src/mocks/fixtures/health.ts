@@ -3,8 +3,8 @@ import type { HealthResponse } from '@/lib/api/types';
 /**
  * Simulasi transisi cold -> warming -> ready, supaya ColdStartBanner teruji
  * nyata di dev (bukan langsung "ready"). Durasi didemokan lebih singkat
- * daripada realita HF Space (spec §9: 30-60 detik) supaya nyaman dites
- * berulang kali — bukan klaim performa asli.
+ * daripada realita cold-start Cloud Run (scale-to-zero, spec §9: 30-60
+ * detik) supaya nyaman dites berulang kali — bukan klaim performa asli.
  */
 const COLD_MS = 1500;
 const WARMING_MS = 6000;

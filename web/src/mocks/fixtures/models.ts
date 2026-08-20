@@ -7,7 +7,7 @@ export const modelsFixture: ModelInfo[] = [
     params_millions: 28,
     input_size: 224,
     onnx_size_mb: 109,
-    description: 'Backbone teringan — target inference tercepat di CPU HF Space.',
+    description: 'Backbone teringan — target inference tercepat di CPU Cloud Run.',
   },
   {
     id: 'small',

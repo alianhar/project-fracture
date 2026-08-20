@@ -5,7 +5,7 @@ const STEPS = [
   { title: 'Train', desc: 'Config identik, 4 arsitektur ConvNeXt' },
   { title: 'Calibrate', desc: 'Temperature scaling + bootstrap CI' },
   { title: 'Export', desc: 'ONNX, verifikasi parity Grad-CAM' },
-  { title: 'Serve', desc: 'FastAPI di HF Space, gerbang OOD' },
+  { title: 'Serve', desc: 'FastAPI di Google Cloud Run, gerbang OOD' },
 ];
 
 /** Kotak flat + garis hairline — bukan diagram bergaya isometrik/gradient. */
