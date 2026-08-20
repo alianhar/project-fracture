@@ -97,7 +97,7 @@ function generateRiskCoverage(baseRisk: number, rng: () => number, points = 20):
     out.push({
       coverage: Number(coverage.toFixed(3)),
       risk: Number(risk.toFixed(4)),
-      threshold: Number((1 - coverage).toFixed(3)),
+      abstain_band: Number((1 - coverage).toFixed(3)),
     });
   }
   return out;

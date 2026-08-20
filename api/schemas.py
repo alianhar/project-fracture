@@ -64,7 +64,7 @@ class ReliabilityPoint(BaseModel):
 class RiskCoveragePoint(BaseModel):
     coverage: float
     risk: float
-    threshold: float
+    abstain_band: float
 
 
 class ModelMetrics(BaseModel):

@@ -7,18 +7,28 @@ ditulis ulang di banyak tempat berbeda dengan nilai berbeda
 ternyata no-op — di test). Modul ini mencegah itu terulang: hanya ADA
 SATU jalur preprocessing.
 
-TensorFlow SENGAJA tidak diimpor di level modul ini -- backend `api/`
-butuh `preprocess_image()`/`IMG_SIZE`/`CLASS_NAMES` TANPA TensorFlow
-(spec §8: image Docker ~400MB, bukan ~3GB). Fungsi yang benar-benar
-butuh TF (`make_generators`, dipakai notebook training/evaluasi saja)
-meng-import TF secara lazy di dalam fungsinya sendiri.
+TensorFlow DAN pandas SENGAJA tidak diimpor di level modul ini -- backend
+`api/` butuh `preprocess_image()`/`IMG_SIZE`/`CLASS_NAMES` TANPA
+keduanya (spec §8: image Docker ~400MB, bukan ~3GB -- ketahuan lewat
+ModuleNotFoundError: No module named 'pandas' saat deploy Cloud Run
+pertama, pandas kelewat waktu TF dijadikan lazy). Fungsi yang benar-benar
+butuh TF/pandas (`manifest_to_dataframe`, `compute_class_weight`,
+`make_generators` -- dipakai notebook training/evaluasi saja) meng-import
+keduanya secara lazy di dalam fungsinya sendiri.
+
+`from __future__ import annotations` WAJIB di sini -- supaya type hint
+`pd.DataFrame` di signature `manifest_to_dataframe` tidak dievaluasi saat
+modul di-import (Python biasanya evaluasi annotation saat definisi
+fungsi, bukan saat dipanggil -- itu yang bikin `import pandas` di level
+modul "menular" ke pemanggil yang cuma butuh preprocess_image()).
 """
+
+from __future__ import annotations
 
 import json
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 IMG_SIZE = 224
 CLASS_NAMES = ("fractured", "not_fractured")  # urutan alfabetis = class_indices Keras
@@ -65,6 +75,8 @@ def manifest_to_dataframe(manifest_path: str | Path, dataset_root: str | Path) -
     untuk catatan) — `dataset_root` WAJIB diberikan eksplisit di sini,
     bukan diasumsikan dari manifest.
     """
+    import pandas as pd  # lazy -- lihat docstring modul
+
     manifest = load_manifest(manifest_path)
     dataset_root = Path(dataset_root)
     rows = [

@@ -56,7 +56,7 @@ export interface ReliabilityPoint {
 export interface RiskCoveragePoint {
   coverage: number;
   risk: number;
-  threshold: number;
+  abstain_band: number;
 }
 
 export interface ModelMetrics {
