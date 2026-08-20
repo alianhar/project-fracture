@@ -34,3 +34,8 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Laporan kemajuan .docx -- dokumen kerja, diedit manual di Word (placeholder
+# [ISI: ...] diisi user), bukan artefak final utk di-track -- regenerasi via
+# scripts/generate_report.py.
+results/laporan_kemajuan.docx
