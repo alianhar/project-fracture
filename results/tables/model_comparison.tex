@@ -1,0 +1,17 @@
+% Tabel perbandingan model -- dibangkitkan otomatis dari results/metrics.json
+% Butuh \usepackage{booktabs} di preamble.
+\begin{table}[htbp]
+\centering
+\caption{Perbandingan performa keempat backbone ConvNeXt pada test set (n=508), interval kepercayaan 95\% dari 2000 resample bootstrap.}
+\label{tab:model-comparison}
+\begin{tabular}{lcccccc}
+\toprule
+Model & Accuracy & Precision & Recall & F1 & AUROC & AUPRC \\
+\midrule
+ConvNeXt-Tiny & 0.9862 [0.9764, 0.9961] & 0.9767 [0.9552, 0.9953] & 0.9906 [0.9764, 1.0000] & 0.9836 [0.9710, 0.9949] & 0.9986 [0.9960, 1.0000] & 0.9984 [0.9955, 0.9999] \\
+ConvNeXt-Small & 0.9882 [0.9783, 0.9961] & 0.9858 [0.9679, 1.0000] & 0.9858 [0.9679, 1.0000] & 0.9858 [0.9736, 0.9955] & 0.9997 [0.9992, 1.0000] & 0.9996 [0.9989, 1.0000] \\
+ConvNeXt-Base & 0.9921 [0.9843, 0.9980] & 0.9815 [0.9614, 0.9956] & 1.0000 [1.0000, 1.0000] & 0.9907 [0.9803, 0.9978] & 0.9993 [0.9979, 1.0000] & 0.9990 [0.9968, 1.0000] \\
+ConvNeXt-Large & 0.9921 [0.9843, 0.9980] & 0.9952 [0.9847, 1.0000] & 0.9858 [0.9673, 1.0000] & 0.9905 [0.9802, 0.9978] & 0.9995 [0.9985, 1.0000] & 0.9994 [0.9981, 1.0000] \\
+\bottomrule
+\end{tabular}
+\end{table}
