@@ -292,13 +292,22 @@ Mengikuti urutan eksekusi di spec §13:
   `fracture.lapanproject.tech` ke backend Cloud Run sukses (`allow-
   origin: *`), redirect HTTP->HTTPS masih jalan, teks "Mode demo" (dari
   `DemoModeBanner`, auto-hide saat `VITE_USE_MOCKS=false`, sudah didesain
-  begini sejak awal) tidak ada lagi di bundle. **Belum diverifikasi**:
-  rendering visual sungguhan di browser (extension Chrome Claude tidak
-  terhubung saat ini) — user disarankan cek manual sekali.
+  begini sejak awal) tidak ada lagi di bundle.
 
   Backup tersimpan di server sebelum overwrite: `/var/backups/fracture-
   dist-20260820-121030.tar.gz` + `fracture-nginx-20260820-121030.conf`
   (rollback kalau perlu).
+
+  **Verifikasi visual sungguhan (2026-08-20, Playwright, bukan cuma
+  curl):** upload citra fracture nyata dari `dataset/` di halaman
+  Analyze -> **"Fractured" benar** (raw 0.997, terkalibrasi 98.8%,
+  ConvNeXt-Small), Grad-CAM overlay TEPAT menyorot lokasi implan/fraktur
+  di pergelangan kaki. Upload citra bukan-fracture -> **"Not Fractured"
+  benar** (raw 0.034, terkalibrasi 6.8%). Halaman Compare (4 model
+  sekaligus, termasuk trigger unduh GCS pertama kali utk Base 336MB &
+  Large 752MB di instance ini) -> **keempat model konsisten "Fractured"**
+  (Tiny 85.1%/902ms, Small 98.8%/1125ms, Base 99.9%/1278ms, Large
+  99.9%/1701ms). Nol error console browser dari awal sampai akhir sesi.
 - ⏳ **[6], [9]** — ablation CLAHE (di model terbaik saja — CI keempat
   model overlap semua, belum ada satu yang signifikan terbaik), figure
   publikasi.
