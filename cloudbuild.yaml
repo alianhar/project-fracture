@@ -1,0 +1,16 @@
+# Konfigurasi Cloud Build utk backend api/ (spec §9 DEVIASI -- HF Space ->
+# Cloud Run, lihat CLAUDE.md). Build context = ROOT REPO (bukan api/),
+# karena api/Dockerfile butuh src/fracture/ sebagai sibling.
+#
+# Jalankan: gcloud builds submit --config=cloudbuild.yaml .
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-f", "api/Dockerfile",
+        "-t", "asia-southeast2-docker.pkg.dev/project-fracture-506109/fracture-api/backend",
+        ".",
+      ]
+images:
+  - "asia-southeast2-docker.pkg.dev/project-fracture-506109/fracture-api/backend"

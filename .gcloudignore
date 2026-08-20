@@ -1,0 +1,26 @@
+# Cloud Build cuma butuh src/, api/, results/metrics.json (lihat api/Dockerfile)
+# -- exclude semua yang lain supaya upload build context cepat, tidak
+# ikut kirim dataset/fracture-exports (sudah diupload terpisah ke GCS)/
+# node_modules/dsb yang totalnya bisa berGB-GB.
+.git/
+.gitignore
+.gcloudignore
+
+dataset/
+Bone_Fracture_Dataset/
+fracture-exports/
+fracture-runs/
+data experiment/
+notebooks/
+docs/
+web/
+node_modules/
+
+*.onnx
+*.npz
+*.keras
+*.h5
+.venv/
+venv/
+__pycache__/
+.ipynb_checkpoints/
