@@ -308,20 +308,34 @@ Mengikuti urutan eksekusi di spec §13:
   Large 752MB di instance ini) -> **keempat model konsisten "Fractured"**
   (Tiny 85.1%/902ms, Small 98.8%/1125ms, Base 99.9%/1278ms, Large
   99.9%/1701ms). Nol error console browser dari awal sampai akhir sesi.
-- 🔶 **[6] Ablation CLAHE — infrastruktur selesai, BELUM dijalankan di
-  Colab.** Dijalankan di Base saja (pilihan operasional, dikonfirmasi
-  eksplisit ke user — CI 95% keempat backbone overlap semua, jadi BUKAN
-  klaim "Base terbukti terbaik"). `src/fracture/clahe.py` (parameter
-  diwarisi dari `data experiment/convnext_tiny.py` — dulu dead code,
-  sekarang benar-benar dipakai), `configs/base_clahe.yaml` (override
-  tipis, `base.yaml` tidak disentuh — hash 4 model utama tetap sama),
-  `notebooks/04_clahe_ablation.ipynb` (18 sel — latih Base+CLAHE dari
-  nol, evaluasi accuracy/f1/auroc bootstrap CI, gabung dgn without_clahe
-  dari `results/metrics.json` Base yg sudah ada, tulis ke
-  `clahe_ablation`). Diuji lokal: CLAHE mengubah kontras nyata (std
-  44.1→48.1 di X-ray asli), backend tetap tidak terpengaruh.
-  **Selanjutnya: jalankan notebook ini di Colab** (training penuh Base
-  lagi, ~1-2 jam) — belum dilakukan.
+- ✅ **[6] Ablation CLAHE — SELESAI (2026-08-20/21).** Dijalankan di Base
+  saja (pilihan operasional, dikonfirmasi eksplisit ke user — CI 95%
+  keempat backbone overlap semua, jadi BUKAN klaim "Base terbukti
+  terbaik"). `src/fracture/clahe.py` (parameter diwarisi dari
+  `data experiment/convnext_tiny.py` — dulu dead code, sekarang benar-
+  benar dipakai), `configs/base_clahe.yaml`, `notebooks/04_clahe_ablation.ipynb`.
+
+  **Hasil:** `fracture-runs/base_clahe_36129f6b/` (56 epoch, done).
+  CI 95% **overlap di ketiga metrik** — CLAHE TIDAK menunjukkan
+  perbedaan signifikan utk Base:
+  | | accuracy | f1 | auroc |
+  |---|---|---|---|
+  | dengan CLAHE | 99.02% [98.03,99.80] | 98.82% [97.67,99.76] | 99.98% [99.93,100] |
+  | tanpa CLAHE | 99.21% [98.43,99.80] | 99.07% [98.03,99.78] | 99.93% [99.79,100] |
+
+  `results/metrics.json.clahe_ablation` terisi & ter-commit. Backend
+  Cloud Run di-**rebuild+redeploy** (revision `fracture-api-00003-5qk`)
+  supaya file yang di-bake ke image ikut update — diverifikasi live via
+  `curl /metrics` DAN visual Playwright di halaman Methodology, tabel
+  ablation tampil dengan angka yang benar.
+
+  **Bug notebook ditemukan & diperbaiki lewat pengalaman nyata:**
+  `04_clahe_ablation.ipynb` awalnya cuma menulis `metrics.json` terupdate
+  ke `/content/project-fracture/` (ephemeral Colab, hilang saat sesi
+  berakhir) — TIDAK ada backup ke Drive spt pola `EXPORT_ROOT` di
+  notebook 03. Ditambahkan `shutil.copy2()` ke Drive di commit `99f711d`
+  (fix utk run berikutnya kalau perlu, TIDAK memengaruhi hasil run ini —
+  user sempat masih di sesi aktif, recovery manual sukses).
 - ⏳ **[9]** — figure & tabel siap publikasi (spec §12: "seluruhnya
   dibangkitkan otomatis dari results/metrics.json").
 - ⏳ **Belum diverifikasi ulang:** Grad-CAM parity (`verify_gradcam_parity`,
