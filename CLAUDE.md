@@ -352,14 +352,41 @@ Mengikuti urutan eksekusi di spec §13:
   CVD separation PASS) + linestyle/marker per model (terbaca hitam-putih).
 
   **Dengan ini seluruh urutan eksekusi spec §13 ([1]-[9]) SELESAI.**
-- ⏳ **Belum diverifikasi ulang:** Grad-CAM parity (`verify_gradcam_parity`,
-  fix bug forward-pass-ganda di commit `26c32da`) belum pernah dijalankan
-  ulang dengan model sungguhan — `results/metrics.json` yang ter-commit
-  masih pakai angka dari run SEBELUM fix (Tiny 4.75e-2, Small 2.6e-2,
-  jauh di atas target 1e-4; Base/Large jauh lebih baik, 2e-3/1.4e-3).
-  Tidak blocking untuk demo/deploy, tapi perlu diputuskan sebelum
-  angka ini dipakai di laporan skripsi: re-run demi angka bersih, atau
-  terima dgn catatan metodologis.
+- ✅ **Grad-CAM parity diverifikasi ulang (2026-08-21) — fix bug terkonfirmasi
+  bekerja.** `verify_gradcam_parity()` (fix forward-pass-ganda di commit
+  `26c32da`) dijalankan ulang thd keempat model sungguhan lewat 1 cell
+  tambahan di akhir notebook 03 (bukan re-run 25 sel penuh). Hasil: Tiny
+  4.75e-2→**1.92e-3** (turun ~25x), Small 2.6e-2→**1.65e-3** (turun ~16x),
+  Base **2.22e-3**, Large **1.43e-3** — keempat model sekarang konvergen ke
+  rentang sempit yang sama (1.4e-3–2.2e-3), pola yang sebelumnya sangat
+  timpang (Tiny/Small jauh lebih buruk dari Base/Large). Ini pola khas bug
+  YANG SUDAH DIPERBAIKI, bukan bug tersisa.
+
+  **Tapi masih di atas ambang asli spec §8/§14 (`atol=1e-4`).** Dianalisis:
+  residual ini adalah lantai presisi floating-point yang inheren, BUKAN bug
+  — `verify_gradcam_parity()` merekonstruksi Grad-CAM lewat ekstraksi bobot
+  head + hitung ulang murni NumPy, dibandingkan ke backprop native TensorFlow
+  (`GradientTape`); urutan penjumlahan float32 beda antara dua jalur ini utk
+  ratusan-ribuan channel (floating-point tidak asosiatif), dan itu cukup utk
+  residual di orde 1e-3. Formula Grad-CAM analitik itu sendiri sudah
+  diverifikasi benar terpisah lewat finite-difference pada data sintetis
+  (~5e-7, jauh di bawah ambang manapun) — jadi ini murni soal presisi
+  rekonstruksi NumPy, bukan kesalahan turunan.
+
+  **Keputusan eksplisit user (2026-08-21, via AskUserQuestion): longgarkan
+  ambang Grad-CAM parity ke `atol=5e-3`** (dari `1e-4` di spec §8/§14 asli) —
+  `verify_gradcam_parity()` default diupdate di `notebooks/03_evaluate_export.ipynb`
+  (regenerasi via `build_evaluate_nb.py` di scratchpad). Konsisten dgn pola
+  deviasi prob parity sebelumnya (1e-4→5e-4, lihat bagian [4]+[5] di atas) —
+  kedua ambang sama-sama dilonggarkan HANYA setelah bug nyata sudah
+  ditemukan & diperbaiki, bukan sebagai pengganti perbaikan. **Spec §8/§14
+  perlu diupdate teksnya** (kini tiga deviasi: 2-output ONNX, ambang prob
+  parity 5e-4, ambang Grad-CAM parity 5e-3) — belum dilakukan.
+
+  `results/metrics.json` masih menyimpan `_gradcam_parity_max_diff` dari
+  run SEBELUM fix — nilai baru sudah tersimpan ke
+  `/content/drive/MyDrive/fracture-exports/metrics.json` oleh user, tapi
+  belum diunduh ke lokal & di-commit (lihat pending task berikutnya).
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 
