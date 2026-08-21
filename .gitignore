@@ -44,3 +44,5 @@ Thumbs.db
 # [ISI: ...] diisi user), bukan artefak final utk di-track -- regenerasi via
 # scripts/generate_report.py.
 results/laporan_kemajuan.docx
+results/laporan_project_fracture.docx
+results/laporan_project_fracture.pdf
