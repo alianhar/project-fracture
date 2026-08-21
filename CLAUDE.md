@@ -427,6 +427,38 @@ Mengikuti urutan eksekusi di spec §13:
   di `AnalyzePage.tsx` cuma saat belum ada citra ter-upload (`!flow.imageUrl`)
   supaya tidak mengganggu view hasil.
 
+  **Deploy live sama sesi ini:** backend Cloud Run di-rebuild+redeploy
+  (revision `fracture-api-00004-55h`, `/metrics` diverifikasi live cocok
+  dgn `results/metrics.json` baru), frontend di-build+scp ke VPS (backup
+  otomatis sebelum overwrite: `/var/backups/fracture-dist-20260821-100248.tar.gz`),
+  diverifikasi visual via `claude-in-chrome` — galeri sample & teks tanpa
+  "skripsi" tampil benar di `fracture.lapanproject.tech`.
+- ✅ **`results/laporan_kemajuan.docx` direvisi (2026-08-21) — framing
+  skripsi dihapus + section baru Panduan Penggunaan.** Konsisten dgn
+  keputusan framing publik di atas: cover diubah dari "LAPORAN KEMAJUAN
+  PENELITIAN TUGAS AKHIR" → "LAPORAN KEMAJUAN PENELITIAN" (field
+  "Dosen Pembimbing"/"Mahasiswa"/dst di cover TETAP ada — itu identitas
+  akademik peneliti, bukan klaim "ini skripsi", dan user mengonfirmasi
+  relasi dgn dosen tetap real walau bukan proyek skripsi formal).
+
+  **Section baru 6 "Panduan Penggunaan Aplikasi dan Glosarium Istilah"**
+  (sebelum "Arsitektur Sistem", jadi section 7-10 lama digeser +1) — user
+  eksplisit minta SEMUANYA di satu file .docx yang sama, BUKAN halaman
+  web terpisah (ditanya via AskUserQuestion, opsi in-app help ditolak
+  eksplisit: "gausa buat di web, karena itu sebatas implementasi saja").
+  Isi: 6.1 cara pakai tiap halaman langkah-demi-langkah (termasuk galeri
+  sample images yang baru), 6.2 tabel glosarium 12 istilah (Grad-CAM, CI
+  95%, threshold, OOD, ECE, cold start, CLAHE, dst) ditulis utk pembaca
+  awam non-ML.
+
+  Sekalian diperbaiki: deskripsi halaman Analyze di Bagian 5 disebutkan
+  fitur galeri sample yang baru; catatan keterbatasan Grad-CAM parity di
+  Bagian 8 diupdate dari "sedang proses verifikasi ulang" jadi status
+  final (angka + analisis floor presisi + ambang 5e-3, konsisten dgn
+  update di bagian atas file ini). Regenerasi: `python
+  scripts/generate_report.py` — file `.docx` sendiri TETAP gitignored
+  (dokumen kerja), cuma `scripts/generate_report.py` yang di-commit.
+
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 
 `data experiment/ConvNeXt_Base.ipynb` berubah di disk (urutan key JSON
