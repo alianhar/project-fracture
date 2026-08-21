@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T07:55:09.536349+00:00",
+  "generated_at": "2026-08-20T22:56:55.746801+00:00",
   "config_hash": "84579a6b",
   "models": [
     {
@@ -356,7 +356,7 @@
       "_ood_threshold": 61.72042508538205,
       "_onnx_size_mb": 107.75115489959717,
       "_prob_parity_max_diff": 9.953603148460388e-05,
-      "_gradcam_parity_max_diff": 0.04749943905222688,
+      "_gradcam_parity_max_diff": 0.0019200254253314286,
       "_bootstrap_skipped_resamples": 0
     },
     {
@@ -713,7 +713,7 @@
       "_ood_threshold": 61.48436302020294,
       "_onnx_size_mb": 190.37774658203125,
       "_prob_parity_max_diff": 0.00016829371452331543,
-      "_gradcam_parity_max_diff": 0.02603013685118369,
+      "_gradcam_parity_max_diff": 0.0016452713349221493,
       "_bootstrap_skipped_resamples": 0
     },
     {
@@ -1070,7 +1070,7 @@
       "_ood_threshold": 86.45615518649369,
       "_onnx_size_mb": 336.2424535751343,
       "_prob_parity_max_diff": 1.287669874727726e-06,
-      "_gradcam_parity_max_diff": 0.0020578958091015953,
+      "_gradcam_parity_max_diff": 0.002217248826908602,
       "_bootstrap_skipped_resamples": 0
     },
     {
@@ -1427,7 +1427,7 @@
       "_ood_threshold": 151.3572612335939,
       "_onnx_size_mb": 751.7327175140381,
       "_prob_parity_max_diff": 4.956033080816269e-06,
-      "_gradcam_parity_max_diff": 0.0014313322637876658,
+      "_gradcam_parity_max_diff": 0.001431511077721992,
       "_bootstrap_skipped_resamples": 0
     }
   ],

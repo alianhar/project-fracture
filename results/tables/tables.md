@@ -1,6 +1,6 @@
 # Tabel & Analisis -- Fracture Classification
 
-Dibangkitkan otomatis dari `results/metrics.json` (generated_at: 2026-08-20T07:55:09.536349+00:00, config_hash: 84579a6b) -- JANGAN diedit manual, jalankan ulang `python scripts/generate_figures.py`.
+Dibangkitkan otomatis dari `results/metrics.json` (generated_at: 2026-08-20T22:56:55.746801+00:00, config_hash: 84579a6b) -- JANGAN diedit manual, jalankan ulang `python scripts/generate_figures.py`.
 
 ## Perbandingan Model (test set, n=508)
 

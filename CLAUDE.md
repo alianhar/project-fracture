@@ -383,10 +383,49 @@ Mengikuti urutan eksekusi di spec §13:
   perlu diupdate teksnya** (kini tiga deviasi: 2-output ONNX, ambang prob
   parity 5e-4, ambang Grad-CAM parity 5e-3) — belum dilakukan.
 
-  `results/metrics.json` masih menyimpan `_gradcam_parity_max_diff` dari
-  run SEBELUM fix — nilai baru sudah tersimpan ke
-  `/content/drive/MyDrive/fracture-exports/metrics.json` oleh user, tapi
-  belum diunduh ke lokal & di-commit (lihat pending task berikutnya).
+  `results/metrics.json` sudah diupdate dgn nilai baru (2026-08-21) —
+  diunduh dari Drive user, digabung manual dgn `clahe_ablation` yang cuma
+  ada di file lama (script re-verifikasi tidak menulis ulang field itu),
+  diverifikasi dulu isi model lain identik (`config_hash` sama, field
+  selain `_gradcam_parity_max_diff` byte-equal) sebelum ditimpa. Sudah
+  di-commit. `results/figures/` + `results/tables/` diregenerasi ulang
+  (`python scripts/generate_figures.py`) — no-op selain timestamp, karena
+  gradcam parity tidak diplot di figure/tabel manapun.
+
+  **Unduhan lokal dari Drive** (`.onnx`+`.npz`+`*_metrics.json` per model)
+  disimpan user di `fracture-exports/` — folder ini di-gitignore (commit
+  `baa7584`), duplikat data yang sumbernya di Drive, bukan aset repo.
+- ✅ **Framing publik "penelitian biasa", bukan skripsi (2026-08-21).**
+  Keputusan eksplisit user: web publik ini bukan proyek skripsi/tugas akhir
+  — dosen/pembimbing tetap ada (laporan `.docx` internal ke dosen TIDAK
+  diubah, itu konteks terpisah), tapi **tampilan yang dilihat publik**
+  tidak lagi menyebut "skripsi"/"tugas akhir". Diperbaiki di 4 tempat:
+  `Footer.tsx` ("platform riset tugas akhir" → "platform riset klasifikasi
+  fraktur"), `DisclaimerNote.tsx` + `i18n/strings.ts` (ID+EN, meski i18n
+  belum di-wire ke UI — tetap disamakan supaya konsisten kalau nanti
+  diaktifkan). `CLAUDE.md` ini sendiri TIDAK disapu (dokumentasi internal,
+  bukan "tampilan").
+- ✅ **Sample images di halaman Analyze (2026-08-21).** User ingin visitor
+  bisa coba sistem tanpa cari data X-ray sendiri. Diseleksi 8
+  fractured + 8 not_fractured dari `results/split_manifest.json` (klaster
+  `assigned_split == "test"`, dicek silang ke `results/corrupt_files.csv`
+  supaya bukan file korup, dibuka+diverifikasi via PIL) — **nol risiko
+  kebocoran train/test** karena diambil dari split resmi yang sudah
+  dijamin nol duplikat by construction (lihat [2]). File disalin ke
+  `web/public/samples/{fractured,not_fractured}/sample-0N.jpg` (nama file
+  asli sengaja tidak dipakai — hash MD5 dataset asli bisa dilacak balik).
+  Daftar path di-hardcode di `web/src/lib/sample-images.ts` (bukan fetch
+  `manifest.json` saat runtime — 16 file statis, tidak perlu network
+  round-trip ekstra) — **kalau set gambar diganti, file ini harus
+  disinkronkan manual**.
+
+  **Keputusan UX (via AskUserQuestion):** download-only (thumbnail →
+  klik → unduh via `<a download>`), BUKAN one-click-load langsung ke
+  analyzer — sesuai pilihan eksplisit user, walau opsi kedua itu UX-nya
+  lebih baik (dipertimbangkan & ditawarkan, ditolak). Cakupan: halaman
+  Analyze saja (bukan Compare juga). Komponen: `SampleImages.tsx`, dipasang
+  di `AnalyzePage.tsx` cuma saat belum ada citra ter-upload (`!flow.imageUrl`)
+  supaya tidak mengganggu view hasil.
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 
