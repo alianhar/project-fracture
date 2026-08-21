@@ -2,6 +2,7 @@ import { ArrowCounterClockwise, Scan } from '@phosphor-icons/react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { ImageDropzone } from '@/components/shared/ImageDropzone';
 import { LightboxViewer } from './components/LightboxViewer';
+import { SampleImages } from './components/SampleImages';
 import { VerdictPanel } from './components/VerdictPanel';
 import { useAnalyzeFlow } from './use-analyze-flow';
 import { useHealthPoll } from '@/hooks/use-health-poll';
@@ -54,7 +55,10 @@ export default function AnalyzePage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div>
           {!flow.imageUrl ? (
-            <ImageDropzone onDrop={flow.runAnalysis} disabled={!isReady} />
+            <div className="space-y-4">
+              <ImageDropzone onDrop={flow.runAnalysis} disabled={!isReady} />
+              <SampleImages />
+            </div>
           ) : (
             <LightboxViewer
               imageUrl={flow.imageUrl}

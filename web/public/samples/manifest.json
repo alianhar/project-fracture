@@ -1,0 +1,118 @@
+{
+  "fractured": [
+    {
+      "filename": "sample-01.jpg",
+      "url": "/samples/fractured/sample-01.jpg",
+      "cluster_hash": "c91933e62ee62ce1",
+      "content_hash": "659d4fcf7010",
+      "size_bytes": 11434
+    },
+    {
+      "filename": "sample-02.jpg",
+      "url": "/samples/fractured/sample-02.jpg",
+      "cluster_hash": "ce31e254aa773586",
+      "content_hash": "c0eb6bad37be",
+      "size_bytes": 8336
+    },
+    {
+      "filename": "sample-03.jpg",
+      "url": "/samples/fractured/sample-03.jpg",
+      "cluster_hash": "9c344360799f0fcb",
+      "content_hash": "5a35fee9baaf",
+      "size_bytes": 13956
+    },
+    {
+      "filename": "sample-04.jpg",
+      "url": "/samples/fractured/sample-04.jpg",
+      "cluster_hash": "83d8492d542e573f",
+      "content_hash": "1c13878f2a31",
+      "size_bytes": 13170
+    },
+    {
+      "filename": "sample-05.jpg",
+      "url": "/samples/fractured/sample-05.jpg",
+      "cluster_hash": "a89ff5475c585149",
+      "content_hash": "d1227baf3b5e",
+      "size_bytes": 32059
+    },
+    {
+      "filename": "sample-06.jpg",
+      "url": "/samples/fractured/sample-06.jpg",
+      "cluster_hash": "99cc06e46c2767b6",
+      "content_hash": "48c314ccbd81",
+      "size_bytes": 9232
+    },
+    {
+      "filename": "sample-07.jpg",
+      "url": "/samples/fractured/sample-07.jpg",
+      "cluster_hash": "8d667339191a6cb5",
+      "content_hash": "0bfadeab5f25",
+      "size_bytes": 13295
+    },
+    {
+      "filename": "sample-08.jpg",
+      "url": "/samples/fractured/sample-08.jpg",
+      "cluster_hash": "99cdb319cf12ce03",
+      "content_hash": "77e9ade7af33",
+      "size_bytes": 5177
+    }
+  ],
+  "not_fractured": [
+    {
+      "filename": "sample-01.jpg",
+      "url": "/samples/not_fractured/sample-01.jpg",
+      "cluster_hash": "cb3de53a780d3c06",
+      "content_hash": "6b0fa1c0f23c",
+      "size_bytes": 13247
+    },
+    {
+      "filename": "sample-02.jpg",
+      "url": "/samples/not_fractured/sample-02.jpg",
+      "cluster_hash": "d864323e0f87cbd1",
+      "content_hash": "0950450cd1bd",
+      "size_bytes": 10668
+    },
+    {
+      "filename": "sample-03.jpg",
+      "url": "/samples/not_fractured/sample-03.jpg",
+      "cluster_hash": "d8330e64739b9bc1",
+      "content_hash": "f7ea3c3791bb",
+      "size_bytes": 12126
+    },
+    {
+      "filename": "sample-04.jpg",
+      "url": "/samples/not_fractured/sample-04.jpg",
+      "cluster_hash": "87c371394cb61e1d",
+      "content_hash": "6a3c5525024a",
+      "size_bytes": 9955
+    },
+    {
+      "filename": "sample-05.jpg",
+      "url": "/samples/not_fractured/sample-05.jpg",
+      "cluster_hash": "95c367315a3d4e34",
+      "content_hash": "1dc32cb778d8",
+      "size_bytes": 9822
+    },
+    {
+      "filename": "sample-06.jpg",
+      "url": "/samples/not_fractured/sample-06.jpg",
+      "cluster_hash": "cf9343651a493e4b",
+      "content_hash": "c351905e0b3b",
+      "size_bytes": 10932
+    },
+    {
+      "filename": "sample-07.jpg",
+      "url": "/samples/not_fractured/sample-07.jpg",
+      "cluster_hash": "9ab756362a385d1c",
+      "content_hash": "a6316059df3b",
+      "size_bytes": 10942
+    },
+    {
+      "filename": "sample-08.jpg",
+      "url": "/samples/not_fractured/sample-08.jpg",
+      "cluster_hash": "d91864ce26cd17ec",
+      "content_hash": "6b9047ef25a3",
+      "size_bytes": 10074
+    }
+  ]
+}
