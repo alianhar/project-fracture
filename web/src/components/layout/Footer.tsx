@@ -13,7 +13,7 @@ export function Footer() {
           </Link>
           .
         </p>
-        <p className="font-mono tabular-nums">Fracture.dx — platform riset tugas akhir</p>
+        <p className="font-mono tabular-nums">Fracture.dx — platform riset klasifikasi fraktur</p>
       </div>
     </footer>
   );

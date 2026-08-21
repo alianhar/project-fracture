@@ -15,7 +15,7 @@ export function DisclaimerNote({ compact = false, className }: { compact?: boole
           <>Alat bantu riset, <strong className="text-text">bukan alat diagnosis</strong>.</>
         ) : (
           <>
-            Sistem ini adalah alat bantu riset untuk tugas akhir/skripsi, <strong className="text-text">bukan
+            Sistem ini adalah alat bantu riset klasifikasi citra, <strong className="text-text">bukan
             alat diagnosis medis</strong> dan belum tersertifikasi untuk penggunaan klinis. Setiap keputusan
             klinis tetap harus melalui radiolog atau tenaga medis berwenang.
           </>

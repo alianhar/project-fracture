@@ -37,7 +37,7 @@ export const id: Dictionary = {
   },
   disclaimer: {
     short: 'Alat bantu riset, bukan alat diagnosis.',
-    full: 'Sistem ini adalah alat bantu riset untuk tugas akhir/skripsi, bukan alat diagnosis medis dan belum tersertifikasi untuk penggunaan klinis. Setiap keputusan klinis tetap harus melalui radiolog atau tenaga medis berwenang.',
+    full: 'Sistem ini adalah alat bantu riset klasifikasi citra, bukan alat diagnosis medis dan belum tersertifikasi untuk penggunaan klinis. Setiap keputusan klinis tetap harus melalui radiolog atau tenaga medis berwenang.',
   },
 };
 
@@ -55,6 +55,6 @@ export const en: Dictionary = {
   },
   disclaimer: {
     short: 'A research tool, not a diagnostic device.',
-    full: 'This system is a research tool for a thesis project, not a medical diagnostic device, and is not certified for clinical use. Clinical decisions must always go through a licensed radiologist or medical professional.',
+    full: 'This system is a research tool for image classification, not a medical diagnostic device, and is not certified for clinical use. Clinical decisions must always go through a licensed radiologist or medical professional.',
   },
 };
