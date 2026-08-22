@@ -40,10 +40,13 @@ Thumbs.db
 .env
 .env.local
 
-# Laporan kemajuan .docx -- dokumen kerja, diedit manual di Word (placeholder
-# [ISI: ...] diisi user), bukan artefak final utk di-track -- regenerasi via
-# scripts/generate_report.py.
+# Laporan project & temuan .docx -- dokumen kerja, diedit manual di Word
+# (placeholder [ISI: ...] diisi user), bukan artefak final utk di-track --
+# regenerasi via scripts/generate_report.py. Nama file diganti 2026-08-23
+# dari laporan_kemajuan.docx -> laporan_project_dan_temuan.docx (nama lama
+# tetap di-ignore jaga-jaga kalau masih ada salinan lokal).
 results/laporan_kemajuan.docx
+results/laporan_project_dan_temuan.docx
 results/laporan_project_fracture.docx
 results/laporan_project_fracture.pdf
 

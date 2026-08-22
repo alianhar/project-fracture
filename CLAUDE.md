@@ -537,8 +537,59 @@ Mengikuti urutan eksekusi di spec §13:
   (dokumen kerja user, bukan aset repo) — cuma `scripts/revise_paper.py`
   + `scripts/generate_paper_figures.py` + `results/figures/paper/*.png`
   yang di-commit.
+- ✅ **Koreksi target file (2026-08-23, sesi sama): revisi seharusnya masuk
+  ke `results/laporan_kemajuan.docx` (progress report kita), BUKAN
+  `docs/LAPORAN-PENELITIAN-Bone-Fracture.docx` (draft paper akademik
+  terpisah).** User klarifikasi setelah revisi paper akademik di atas
+  selesai — via AskUserQuestion, user pilih TIDAK di-revert (biarkan
+  revisi paper akademik tetap ada, dianggap bonus), lanjut kerjakan
+  permintaan sebenarnya secara terpisah.
 
-## ⚠️ Anomali belum terjelaskan (2026-08-14)
+  **`scripts/generate_report.py` diupdate & output di-rename:**
+  `laporan_kemajuan.docx` → **`laporan_project_dan_temuan.docx`** (nama
+  eksplisit dari user, cover diubah jadi "LAPORAN PROJECT DAN TEMUAN
+  PENELITIAN"). `.gitignore` diupdate — nama lama TETAP di-ignore
+  (jaga-jaga ada salinan lokal lama), nama baru ditambahkan.
+
+  **Section baru "3.7 Penjelasan Mendalam: CLAHE, Threshold, Grad-CAM,
+  dan Kalibrasi"** — user eksplisit bingung soal CLAHE "dipakai di awal
+  apa di akhir" (krn notebook 04_clahe_ablation dijalankan PALING
+  TERAKHIR, setelah 4 model utama sudah selesai tanpa CLAHE). Dijelaskan
+  dua makna "awal/akhir" yang tertukar: (1) dalam pipeline SATU citra,
+  CLAHE tetap preprocessing DI AWAL (sebelum resize/augmentasi); (2)
+  dalam URUTAN EKSPERIMEN, CLAHE sengaja diuji TERAKHIR sbg ablation
+  study terpisah (hipotesis yg diuji stlh baseline jelas), bukan
+  langsung dipakai di 4 model utama tanpa bukti — analogi: uji bumbu
+  baru di resep dgn masak 2 versi identik (dgn/tanpa), bukan langsung
+  ditambahkan ke semua masakan. Threshold slider, Grad-CAM, dan
+  kalibrasi probabilitas juga dijelaskan mendalam dgn contoh nyata dari
+  sistem ini (angka asli, bukan generik) + analogi sederhana (nilai
+  batas kelulusan utk threshold, dokter menunjuk lokasi fraktur utk
+  Grad-CAM, peramal cuaca overconfident utk kalibrasi) — permintaan
+  eksplisit user.
+
+  **Section baru "10. Perbandingan Draft Paper Akademik dengan Pipeline
+  yang Dikerjakan"** (Kesimpulan lama digeser 10→11) — versi RINGKAS &
+  OBJEKTIF dari analisis yang sudah dikerjakan sblm ini utk revisi paper
+  akademik: 10.1 tabel perbandingan sistematis (dataset/split/
+  preprocessing/augmentasi/training/threshold/evaluasi/hasil 4 model),
+  10.2 penjelasan kenapa pola hasil draft paper (3 model collapse ~48-
+  53%, 1 model "kebetulan" 98,6%) cocok dgn 2 bug independen yg sudah
+  didokumentasikan di Bagian 2 (bukan koinsidensi) — DENGAN catatan
+  eksplisit soal batas objektivitas klaim ini (korelasional, bukan bukti
+  langsung dari log eksperimen yg hilang), 10.3 temuan independen
+  (kontaminasi paru-paru/5-kelas, kalkulasi manual fiktif), 10.4
+  kesimpulan dgn 5 alasan konkret yg bisa diverifikasi (reproducible,
+  diuji end-to-end live, kebocoran nol by construction, CI 95%
+  dilaporkan, pola hasil lama konsisten scr logis dgn bug yg sudah
+  dijelaskan) — bukan sekadar klaim "punya kami lebih benar".
+
+  **Verifikasi:** dijalankan `python scripts/generate_report.py`,
+  struktur heading dicek (11 section utama + Ringkasan + Lampiran,
+  numbering benar), isi tabel perbandingan dicek manual, dump teks penuh
+  dibaca ulang cari mojibake (bersih — karakter "±"/"°" sempat terlihat
+  rusak di terminal cp1252 tapi terverifikasi UTF-8 benar di file
+  `.docx` sungguhan via cek byte eksplisit).
 
 `data experiment/ConvNeXt_Base.ipynb` berubah di disk (urutan key JSON
 `output_type`/`name` tertukar di banyak output cell) — isi/data sama persis,
