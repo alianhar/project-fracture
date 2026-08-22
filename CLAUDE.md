@@ -458,6 +458,85 @@ Mengikuti urutan eksekusi di spec §13:
   update di bagian atas file ini). Regenerasi: `python
   scripts/generate_report.py` — file `.docx` sendiri TETAP gitignored
   (dokumen kerja), cuma `scripts/generate_report.py` yang di-commit.
+- ✅ **`docs/LAPORAN-PENELITIAN-Bone-Fracture.docx` (paper akademik penuh,
+  bukan `laporan_kemajuan.docx`) direvisi besar (2026-08-23) — user
+  menambahkan file ini + versi `.md` (konversi markitdown, utk dibaca
+  Claude tanpa boros token) ke `docs/`, minta dibandingkan dengan
+  pipeline yang sudah dikerjakan sepanjang sesi.**
+
+  **Temuan kritis: paper versi lama melaporkan hasil dari EKSPERIMEN
+  AWAL yang cacat (bukan pipeline final).** Terbukti dari confusion
+  matrix & akurasi yang persis cocok dgn bug yang sudah didokumentasikan
+  di bagian [2]/[3] di atas: ConvNeXt Large 50% akurasi (AUC 0,6312),
+  Base 48% (AUC 0,6113), Tiny 53,2% (AUC 0,5868) — pola collapse ke
+  coin-flip khas bug preprocessing train≠test — dan Small 98,6% yang
+  PERSIS angka yang di bagian [2] sudah ditandai "tidak bisa dipercaya"
+  (dari data yang bocor 34,84%). Dataset diklaim 10.587 citra (angka
+  RAW pre-audit, bukan 3.370 unik pasca-dedup), split rasio 87,4/7,8/4,8
+  (bukan 70/15/15), preprocessing diklaim manual rescale [0,255]→[-1,1]
+  (bukan identity spt temuan asli), augmentasi ±30°/20% (bukan ±15°/15%
+  sesuai `configs/base.yaml`), 1 fase 70 epoch fixed (bukan 2 fase
+  EarlyStopping, total 40-58 epoch/model).
+
+  **Temuan kedua, independen dari sinkronisasi data: kontaminasi
+  template.** ~30 paragraf BAB III/IV masih literal membahas topik
+  BEDA ("klasifikasi multi-kelas penyakit paru-paru", flowchart
+  captioned "Output 1x1x5"/"5 kelas", softmax) — jelas sisa
+  copy-paste dari sumber lain yang tidak sepenuhnya diadaptasi.
+  **Temuan ketiga: ~150 paragraf (BAB IV §4.4-4.5, hampir 15% dokumen)
+  berisi kalkulasi manual konvolusi/ReLU/average-pooling/perceptron
+  piksel-demi-piksel dengan angka yang TIDAK merepresentasikan
+  pelatihan ConvNeXt sungguhan** (ConvNeXt dilatih via autodiff
+  TensorFlow/Adam optimizer, bukan hitung tangan) — kemungkinan besar
+  ilustrasi generik "cara kerja CNN" yang tidak pernah disesuaikan.
+
+  **Keputusan eksplisit user (via 2x AskUserQuestion):** (1) revisi
+  penuh BAB III (metode/dataset/split/preprocessing) + BAB IV (hasil
+  4 model + tabel/figure) memakai data asli `results/metrics.json` +
+  bersihkan kontaminasi paru-paru/5-kelas — dieksekusi via
+  `scripts/revise_paper.py`; (2) section kalkulasi manual §4.4-4.5
+  SENGAJA TIDAK DIHAPUS (bukan disync/diganti) — permintaan eksplisit
+  user: "ini aja dlu, tapi dibuat juga peringatannya/disclaimernya" +
+  ditambah section baru "4.1.1 Audit Dataset dan Alasan Revisi
+  Metodologi" yang menjelaskan SECARA MENDETAIL dgn analogi kenapa
+  eksperimen awal ditinggalkan (analogi ujian-dgn-jawaban-dihafal utk
+  kebocoran data, analogi peta-beda-skala utk bug preprocessing, analogi
+  standar-kelulusan-ditentukan-setelah-lihat-hasil utk threshold-di-test-
+  set) — permintaan eksplisit user juga.
+
+  **Implementasi teknis (`scripts/revise_paper.py`, `scripts/
+  generate_paper_figures.py`):** operasi SURGICAL pada `.docx` yang
+  SUDAH ADA (python-docx, akses paragraf/tabel by index) — BUKAN
+  regenerasi dari nol spt `generate_report.py` — supaya cover, lembar
+  pengesahan, surat pernyataan plagiasi, abstrak, BAB I, BAB II
+  (tinjauan pustaka), daftar pustaka TIDAK tersentuh sama sekali
+  (terlalu berisiko/institusional utk dibangun ulang programatik).
+  Backup timestamped otomatis dibuat SEBELUM menimpa
+  (`docs/LAPORAN-PENELITIAN-Bone-Fracture.backup-<ts>.docx`). Urutan
+  eksekusi penting: edit teks/tabel/gambar pakai INDEKS ASLI dulu (tidak
+  mengubah jumlah paragraf), baru INSERSI paragraf baru (disclaimer +
+  section audit) PALING TERAKHIR pakai referensi objek paragraf (bukan
+  indeks) — supaya insersi tidak menggeser indeks yang dipakai edit
+  sebelumnya. 12 gambar diganti (4 training curve REAL dari
+  `fracture-runs/*/training_curve.png`, 4 confusion matrix + 4 ROC curve
+  digenerate baru per-model dari `results/metrics.json` via
+  `generate_paper_figures.py`, disimpan `results/figures/paper/`).
+  Tabel "Hasil Prediksi" (§4.9) diisi confidence SUNGGUHAN dari backend
+  live Cloud Run (curl `/predict` thd `web/public/samples/{fractured,
+  not_fractured}/sample-01.jpg`, keempat model — bukan angka contoh).
+
+  **Verifikasi sebelum selesai:** integritas zip `.docx` OK, jumlah
+  paragraf/tabel masuk akal (1044→1060), 3 gambar baru dibuka manual
+  (training curve/confusion matrix/ROC ConvNeXt-Large) dikonfirmasi
+  BENAR bukan corrupt/kosong, grep akhir "paru-paru" cuma nyisa 1 hit
+  (di dalam section §4.4-4.5 yang sengaja dibiarkan, tercakup
+  disclaimer) — 4 paragraf lain yang lolos di pass pertama script
+  ditemukan lewat grep ulang, ditambal manual (indeks paragraf).
+
+  **File `.docx`/`.backup-*.docx`/`.md` di `docs/` TETAP gitignored**
+  (dokumen kerja user, bukan aset repo) — cuma `scripts/revise_paper.py`
+  + `scripts/generate_paper_figures.py` + `results/figures/paper/*.png`
+  yang di-commit.
 
 ## ⚠️ Anomali belum terjelaskan (2026-08-14)
 

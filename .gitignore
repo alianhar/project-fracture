@@ -46,3 +46,11 @@ Thumbs.db
 results/laporan_kemajuan.docx
 results/laporan_project_fracture.docx
 results/laporan_project_fracture.pdf
+
+# Paper akademik penuh (docs/LAPORAN-PENELITIAN-Bone-Fracture.*) -- dokumen kerja
+# milik user (bukan aset repo), direvisi via scripts/revise_paper.py yang
+# menimpa di tempat + backup timestamped otomatis. .md adalah konversi
+# markitdown user utk dibaca Claude, bukan sumber kebenaran.
+docs/LAPORAN-PENELITIAN-Bone-Fracture.docx
+docs/LAPORAN-PENELITIAN-Bone-Fracture.backup-*.docx
+docs/LAPORAN-PENELITIAN-Bone-Fracture.md
